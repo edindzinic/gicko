@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { FeedingModal } from "@/components/FeedingModal";
+import { SleepEditModal } from "@/components/SleepEditModal";
 import {
   formatDuration,
   formatTime,
@@ -29,6 +30,8 @@ export default function HomePage() {
     undefined,
   );
   const [wakePrompt, setWakePrompt] = useState<string | null>(null);
+  const [editingSession, setEditingSession] = useState<SleepSession | null>(null);
+  const [editingFeeding, setEditingFeeding] = useState<Feeding | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -156,38 +159,45 @@ export default function HomePage() {
             return new Date(bTime).getTime() - new Date(aTime).getTime();
           })
           .map((entry) => (
-            <li
-              key={`${entry.type}-${entry.item.id}`}
-              className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900"
-            >
-              <span className="text-xl">
-                {entry.type === "sleep" ? "🌙" : "🍼"}
-              </span>
-              <div className="flex-1">
-                {entry.type === "sleep" ? (
-                  <>
-                    <p className="text-sm font-medium">
-                      {formatTime(entry.item.started_at)} –{" "}
-                      {entry.item.ended_at ? formatTime(entry.item.ended_at) : "now"}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {formatDuration(
-                        sessionDurationMinutes(entry.item.started_at, entry.item.ended_at),
-                      )}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm font-medium capitalize">
-                      {entry.item.feed_type}
-                      {entry.item.amount ? ` · ${entry.item.amount}${entry.item.unit}` : ""}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {formatTime(entry.item.occurred_at)}
-                    </p>
-                  </>
-                )}
-              </div>
+            <li key={`${entry.type}-${entry.item.id}`}>
+              <button
+                onClick={() =>
+                  entry.type === "sleep"
+                    ? setEditingSession(entry.item)
+                    : setEditingFeeding(entry.item)
+                }
+                className="flex w-full items-center gap-3 rounded-xl bg-white p-3 text-left shadow-sm transition hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+              >
+                <span className="text-xl">
+                  {entry.type === "sleep" ? "🌙" : "🍼"}
+                </span>
+                <div className="flex-1">
+                  {entry.type === "sleep" ? (
+                    <>
+                      <p className="text-sm font-medium">
+                        {formatTime(entry.item.started_at)} –{" "}
+                        {entry.item.ended_at ? formatTime(entry.item.ended_at) : "now"}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {formatDuration(
+                          sessionDurationMinutes(entry.item.started_at, entry.item.ended_at),
+                        )}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-medium capitalize">
+                        {entry.item.feed_type}
+                        {entry.item.amount ? ` · ${entry.item.amount}${entry.item.unit}` : ""}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {formatTime(entry.item.occurred_at)}
+                      </p>
+                    </>
+                  )}
+                </div>
+                <span className="text-slate-300">✎</span>
+              </button>
             </li>
           ))}
         {todaySessions.length === 0 && todayFeedings.length === 0 && (
@@ -203,6 +213,28 @@ export default function HomePage() {
           onClose={() => setFeedingModalSleepId(undefined)}
           onSaved={() => {
             setFeedingModalSleepId(undefined);
+            load();
+          }}
+        />
+      )}
+
+      {editingSession && (
+        <SleepEditModal
+          session={editingSession}
+          onClose={() => setEditingSession(null)}
+          onSaved={() => {
+            setEditingSession(null);
+            load();
+          }}
+        />
+      )}
+
+      {editingFeeding && (
+        <FeedingModal
+          feeding={editingFeeding}
+          onClose={() => setEditingFeeding(null)}
+          onSaved={() => {
+            setEditingFeeding(null);
             load();
           }}
         />

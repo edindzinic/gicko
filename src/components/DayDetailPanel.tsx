@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { formatDuration, formatTime, sessionDurationMinutes } from "@/lib/time";
+import { FeedingModal } from "@/components/FeedingModal";
+import { SleepEditModal } from "@/components/SleepEditModal";
 
 export function DayDetailPanel({
   day,
@@ -19,44 +21,41 @@ export function DayDetailPanel({
   const [noteId, setNoteId] = useState<string | null>(null);
   const [savingNote, setSavingNote] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editingSession, setEditingSession] = useState<Tables<"sleep_sessions"> | null>(null);
+  const [editingFeeding, setEditingFeeding] = useState<Tables<"feedings"> | null>(null);
+
+  const load = useCallback(async () => {
+    const supabase = createClient();
+    const start = `${day}T00:00:00`;
+    const end = `${day}T23:59:59.999`;
+
+    const [{ data: s }, { data: f }, { data: c }] = await Promise.all([
+      supabase
+        .from("sleep_sessions")
+        .select("*")
+        .gte("started_at", start)
+        .lte("started_at", end)
+        .order("started_at", { ascending: true }),
+      supabase
+        .from("feedings")
+        .select("*")
+        .gte("occurred_at", start)
+        .lte("occurred_at", end)
+        .order("occurred_at", { ascending: true }),
+      supabase.from("day_comments").select("*").eq("day", day).maybeSingle(),
+    ]);
+
+    setSessions(s ?? []);
+    setFeedings(f ?? []);
+    setNote(c?.body ?? "");
+    setNoteId(c?.id ?? null);
+    setLoading(false);
+  }, [day]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      const supabase = createClient();
-      const start = `${day}T00:00:00`;
-      const end = `${day}T23:59:59.999`;
-
-      const [{ data: s }, { data: f }, { data: c }] = await Promise.all([
-        supabase
-          .from("sleep_sessions")
-          .select("*")
-          .gte("started_at", start)
-          .lte("started_at", end)
-          .order("started_at", { ascending: true }),
-        supabase
-          .from("feedings")
-          .select("*")
-          .gte("occurred_at", start)
-          .lte("occurred_at", end)
-          .order("occurred_at", { ascending: true }),
-        supabase.from("day_comments").select("*").eq("day", day).maybeSingle(),
-      ]);
-
-      if (cancelled) return;
-      setSessions(s ?? []);
-      setFeedings(f ?? []);
-      setNote(c?.body ?? "");
-      setNoteId(c?.id ?? null);
-      setLoading(false);
-    }
-
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount/day change
     load();
-    return () => {
-      cancelled = true;
-    };
-  }, [day]);
+  }, [load]);
 
   async function saveNote() {
     setSavingNote(true);
@@ -98,36 +97,43 @@ export function DayDetailPanel({
           <>
             <ul className="mb-6 space-y-2">
               {timeline.map((entry) => (
-                <li
-                  key={`${entry.type}-${entry.item.id}`}
-                  className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800"
-                >
-                  <span className="text-xl">{entry.type === "sleep" ? "🌙" : "🍼"}</span>
-                  <div className="flex-1">
-                    {entry.type === "sleep" ? (
-                      <>
-                        <p className="text-sm font-medium">
-                          {formatTime(entry.item.started_at)} –{" "}
-                          {entry.item.ended_at ? formatTime(entry.item.ended_at) : "now"}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {formatDuration(
-                            sessionDurationMinutes(entry.item.started_at, entry.item.ended_at),
-                          )}
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-sm font-medium capitalize">
-                          {entry.item.feed_type}
-                          {entry.item.amount ? ` · ${entry.item.amount}${entry.item.unit}` : ""}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {formatTime(entry.item.occurred_at)}
-                        </p>
-                      </>
-                    )}
-                  </div>
+                <li key={`${entry.type}-${entry.item.id}`}>
+                  <button
+                    onClick={() =>
+                      entry.type === "sleep"
+                        ? setEditingSession(entry.item)
+                        : setEditingFeeding(entry.item)
+                    }
+                    className="flex w-full items-center gap-3 rounded-xl bg-slate-50 p-3 text-left transition hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700"
+                  >
+                    <span className="text-xl">{entry.type === "sleep" ? "🌙" : "🍼"}</span>
+                    <div className="flex-1">
+                      {entry.type === "sleep" ? (
+                        <>
+                          <p className="text-sm font-medium">
+                            {formatTime(entry.item.started_at)} –{" "}
+                            {entry.item.ended_at ? formatTime(entry.item.ended_at) : "now"}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {formatDuration(
+                              sessionDurationMinutes(entry.item.started_at, entry.item.ended_at),
+                            )}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium capitalize">
+                            {entry.item.feed_type}
+                            {entry.item.amount ? ` · ${entry.item.amount}${entry.item.unit}` : ""}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {formatTime(entry.item.occurred_at)}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    <span className="text-slate-300">✎</span>
+                  </button>
                 </li>
               ))}
               {timeline.length === 0 && (
@@ -152,6 +158,28 @@ export function DayDetailPanel({
           </>
         )}
       </div>
+
+      {editingSession && (
+        <SleepEditModal
+          session={editingSession}
+          onClose={() => setEditingSession(null)}
+          onSaved={() => {
+            setEditingSession(null);
+            load();
+          }}
+        />
+      )}
+
+      {editingFeeding && (
+        <FeedingModal
+          feeding={editingFeeding}
+          onClose={() => setEditingFeeding(null)}
+          onSaved={() => {
+            setEditingFeeding(null);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { TablesInsert } from "@/lib/database.types";
+import type { Tables, TablesInsert } from "@/lib/database.types";
+import { toDatetimeLocalValue } from "@/lib/time";
 
 type FeedType = "breast" | "bottle" | "formula" | "solid";
 
@@ -13,26 +14,31 @@ const FEED_TYPES: { value: FeedType; label: string; icon: string }[] = [
   { value: "solid", label: "Solid", icon: "🥣" },
 ];
 
-function toLocalInputValue(date: Date) {
-  const offset = date.getTimezoneOffset();
-  return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16);
-}
-
 export function FeedingModal({
+  feeding,
   defaultSleepSessionId,
   onClose,
   onSaved,
 }: {
+  feeding?: Tables<"feedings">;
   defaultSleepSessionId?: string | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [feedType, setFeedType] = useState<FeedType>("bottle");
-  const [amount, setAmount] = useState("");
-  const [unit, setUnit] = useState<"ml" | "oz">("ml");
-  const [notes, setNotes] = useState("");
-  const [occurredAt, setOccurredAt] = useState(() => toLocalInputValue(new Date()));
+  const isEditing = !!feeding;
+
+  const [feedType, setFeedType] = useState<FeedType>(
+    (feeding?.feed_type as FeedType) ?? "bottle",
+  );
+  const [amount, setAmount] = useState(feeding?.amount != null ? String(feeding.amount) : "");
+  const [unit, setUnit] = useState<"ml" | "oz">((feeding?.unit as "ml" | "oz") ?? "ml");
+  const [notes, setNotes] = useState(feeding?.notes ?? "");
+  const [occurredAt, setOccurredAt] = useState(() =>
+    toDatetimeLocalValue(feeding?.occurred_at ?? new Date()),
+  );
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const needsAmount = feedType === "bottle" || feedType === "formula";
@@ -48,14 +54,32 @@ export function FeedingModal({
       amount: needsAmount && amount ? Number(amount) : null,
       unit: needsAmount && amount ? unit : null,
       notes: notes || null,
-      sleep_session_id: defaultSleepSessionId ?? null,
+      sleep_session_id: feeding?.sleep_session_id ?? defaultSleepSessionId ?? null,
     };
 
-    const { error: insertError } = await supabase.from("feedings").insert(payload);
+    const { error: saveError } = isEditing
+      ? await supabase.from("feedings").update(payload).eq("id", feeding.id)
+      : await supabase.from("feedings").insert(payload);
 
     setSaving(false);
-    if (insertError) {
+    if (saveError) {
       setError("Couldn't save the feeding. Try again.");
+      return;
+    }
+    onSaved();
+  }
+
+  async function handleDelete() {
+    if (!feeding) return;
+    setDeleting(true);
+    const supabase = createClient();
+    const { error: deleteError } = await supabase
+      .from("feedings")
+      .delete()
+      .eq("id", feeding.id);
+    setDeleting(false);
+    if (deleteError) {
+      setError("Couldn't delete the feeding. Try again.");
       return;
     }
     onSaved();
@@ -64,7 +88,9 @@ export function FeedingModal({
   return (
     <div className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center">
       <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-slate-900">
-        <h2 className="mb-4 text-lg font-semibold">Log a feeding</h2>
+        <h2 className="mb-4 text-lg font-semibold">
+          {isEditing ? "Edit feeding" : "Log a feeding"}
+        </h2>
 
         <div className="mb-4 grid grid-cols-4 gap-2">
           {FEED_TYPES.map((t) => (
@@ -147,12 +173,42 @@ export function FeedingModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || deleting}
             className="flex-1 rounded-lg bg-sky-600 py-3 text-base font-medium text-white hover:bg-sky-700 disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
+
+        {isEditing && (
+          <div className="mt-3">
+            {confirmingDelete ? (
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <span className="text-slate-500">Delete this feeding?</span>
+                <button
+                  onClick={() => setConfirmingDelete(false)}
+                  className="rounded-lg px-2 py-1 text-slate-500"
+                >
+                  No
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="rounded-lg bg-red-600 px-3 py-1 font-medium text-white disabled:opacity-50"
+                >
+                  {deleting ? "Deleting…" : "Yes, delete"}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmingDelete(true)}
+                className="w-full py-1 text-center text-sm text-red-600"
+              >
+                Delete feeding
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

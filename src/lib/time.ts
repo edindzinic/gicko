@@ -28,3 +28,9 @@ export function formatTime(iso: string) {
 export function formatDateTime(iso: string) {
   return format(parseISO(iso), "MMM d, h:mm a");
 }
+
+export function toDatetimeLocalValue(iso: string | Date) {
+  const date = typeof iso === "string" ? parseISO(iso) : iso;
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16);
+}
