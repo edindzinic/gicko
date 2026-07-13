@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { addDays, eachDayOfInterval, format, isToday } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
-import { minutesSinceMidnight, splitIntervalByDay } from "@/lib/time";
+import { formatHourLabel, minutesSinceMidnight, splitIntervalByDay } from "@/lib/time";
 
 const HOUR_HEIGHT = 32; // px per hour
 const DAY_HEIGHT = HOUR_HEIGHT * 24;
@@ -15,12 +15,6 @@ type Feeding = Tables<"feedings">;
 
 function pct(minutes: number) {
   return (minutes / 1440) * DAY_HEIGHT;
-}
-
-function formatHourLabel(hour: number) {
-  if (hour === 0) return "12am";
-  if (hour === 12) return "12pm";
-  return hour < 12 ? `${hour}am` : `${hour - 12}pm`;
 }
 
 export function WeekView({

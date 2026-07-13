@@ -51,8 +51,8 @@ export default function SettingsPage() {
 
       const sleepRows = (sessions ?? []).map((s) => ({
         Date: format(new Date(s.started_at), "yyyy-MM-dd"),
-        "Started at": format(new Date(s.started_at), "h:mm a"),
-        "Ended at": s.ended_at ? format(new Date(s.ended_at), "h:mm a") : "still asleep",
+        "Started at": format(new Date(s.started_at), "HH:mm"),
+        "Ended at": s.ended_at ? format(new Date(s.ended_at), "HH:mm") : "still asleep",
         Duration: formatDuration(sessionDurationMinutes(s.started_at, s.ended_at)),
         "Night wake-up": s.ended_at && isNightTime(s.ended_at) ? "Yes" : "No",
         Notes: s.notes ?? "",
@@ -60,7 +60,7 @@ export default function SettingsPage() {
 
       const feedingRows = (feedings ?? []).map((f) => ({
         Date: format(new Date(f.occurred_at), "yyyy-MM-dd"),
-        Time: format(new Date(f.occurred_at), "h:mm a"),
+        Time: format(new Date(f.occurred_at), "HH:mm"),
         Type: f.feed_type,
         Amount: f.amount ?? "",
         Unit: f.unit ?? "",

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Tables } from "@/lib/database.types";
-import { formatDuration, minutesSinceMidnight, splitIntervalByDay } from "@/lib/time";
+import { formatDuration, formatHourLabel, minutesSinceMidnight, splitIntervalByDay } from "@/lib/time";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
@@ -12,12 +12,6 @@ const DAY_HEIGHT = HOUR_HEIGHT * 24;
 
 function topForMinutes(minutes: number) {
   return (minutes / 60) * HOUR_HEIGHT;
-}
-
-function formatHourLabel(hour: number) {
-  if (hour === 0) return "12 AM";
-  if (hour === 12) return "12 PM";
-  return hour < 12 ? `${hour} AM` : `${hour - 12} PM`;
 }
 
 export function DayTimeline({

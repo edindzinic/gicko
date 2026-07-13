@@ -22,11 +22,15 @@ export function sessionDurationMinutes(startedAt: string, endedAt: string | null
 }
 
 export function formatTime(iso: string) {
-  return format(parseISO(iso), "h:mm a");
+  return format(parseISO(iso), "HH:mm");
 }
 
 export function formatDateTime(iso: string) {
-  return format(parseISO(iso), "MMM d, h:mm a");
+  return format(parseISO(iso), "MMM d, HH:mm");
+}
+
+export function formatHourLabel(hour: number) {
+  return `${String(hour % 24).padStart(2, "0")}:00`;
 }
 
 export function toDatetimeLocalValue(iso: string | Date) {
