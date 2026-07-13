@@ -213,12 +213,14 @@ export default function HomePage() {
         </div>
       )}
 
-      <button
-        onClick={() => setFeedingModalSleepId(null)}
-        className="mb-6 w-full rounded-xl border-2 border-teal-500 py-4 text-lg font-semibold text-teal-600 active:scale-[0.98] dark:text-teal-400"
-      >
-        🍼 Log a feeding
-      </button>
+      {viewingToday && (
+        <button
+          onClick={() => setFeedingModalSleepId(null)}
+          className="mb-6 w-full rounded-xl border-2 border-teal-500 py-4 text-lg font-semibold text-teal-600 active:scale-[0.98] dark:text-teal-400"
+        >
+          🍼 Log a feeding
+        </button>
+      )}
 
       {/* Day rollup */}
       <div className="mb-6 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
