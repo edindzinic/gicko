@@ -100,7 +100,7 @@ export function FeedingModal({
 
   return (
     <div className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-slate-900">
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-6 shadow-xl sm:rounded-3xl dark:bg-stone-900">
         <h2 className="mb-4 text-lg font-semibold">
           {isEditing ? "Edit feeding" : "Log a feeding"}
         </h2>
@@ -110,10 +110,10 @@ export function FeedingModal({
             <button
               key={t.value}
               onClick={() => setFeedType(t.value)}
-              className={`flex flex-col items-center gap-1 rounded-xl border py-3 text-xs font-medium transition ${
+              className={`flex flex-col items-center gap-1 rounded-2xl border py-3 text-xs font-medium transition ${
                 feedType === t.value
-                  ? "border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300"
-                  : "border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300"
+                  ? "border-rose-400 bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300"
+                  : "border-stone-200 text-stone-600 dark:border-stone-700 dark:text-stone-300"
               }`}
             >
               <span className="text-xl">{t.icon}</span>
@@ -124,25 +124,25 @@ export function FeedingModal({
 
         <div className="mb-4 flex gap-2">
           <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+            <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
               Date
             </label>
             <input
               type="date"
               value={occurredDate}
               onChange={(e) => setOccurredDate(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+              className="w-full rounded-2xl border border-stone-200 px-3 py-2.5 text-base dark:border-stone-700 dark:bg-stone-800"
             />
           </div>
           <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+            <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
               Time
             </label>
             <input
               type="time"
               value={occurredTime}
               onChange={(e) => setOccurredTime(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+              className="w-full rounded-2xl border border-stone-200 px-3 py-2.5 text-base dark:border-stone-700 dark:bg-stone-800"
             />
           </div>
         </div>
@@ -150,7 +150,7 @@ export function FeedingModal({
         {needsAmount && (
           <div className="mb-4 flex gap-2">
             <div className="flex-1">
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
                 Amount
               </label>
               <input
@@ -161,17 +161,17 @@ export function FeedingModal({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="e.g. 120"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+                className="w-full rounded-2xl border border-stone-200 px-3 py-2.5 text-base dark:border-stone-700 dark:bg-stone-800"
               />
             </div>
             <div className="w-24">
-              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
                 Unit
               </label>
               <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value as "ml" | "oz")}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+                className="w-full rounded-2xl border border-stone-200 px-3 py-2.5 text-base dark:border-stone-700 dark:bg-stone-800"
               >
                 <option value="ml">ml</option>
                 <option value="oz">oz</option>
@@ -180,14 +180,14 @@ export function FeedingModal({
           </div>
         )}
 
-        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
           Notes (optional)
         </label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
-          className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+          className="mb-4 w-full rounded-2xl border border-stone-200 px-3 py-2.5 text-base dark:border-stone-700 dark:bg-stone-800"
         />
 
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
@@ -195,14 +195,14 @@ export function FeedingModal({
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 rounded-lg border border-slate-300 py-3 text-base font-medium text-slate-600 dark:border-slate-700 dark:text-slate-300"
+            className="flex-1 rounded-2xl border border-stone-200 py-3 text-base font-medium text-stone-600 dark:border-stone-700 dark:text-stone-300"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving || deleting}
-            className="flex-1 rounded-lg bg-indigo-600 py-3 text-base font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="flex-1 rounded-2xl bg-violet-500 py-3 text-base font-medium text-white hover:bg-violet-600 disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -212,17 +212,17 @@ export function FeedingModal({
           <div className="mt-3">
             {confirmingDelete ? (
               <div className="flex items-center justify-center gap-2 text-sm">
-                <span className="text-slate-500">Delete this feeding?</span>
+                <span className="text-stone-500">Delete this feeding?</span>
                 <button
                   onClick={() => setConfirmingDelete(false)}
-                  className="rounded-lg px-2 py-1 text-slate-500"
+                  className="rounded-2xl px-2 py-1 text-stone-500"
                 >
                   No
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="rounded-lg bg-red-600 px-3 py-1 font-medium text-white disabled:opacity-50"
+                  className="rounded-2xl bg-red-600 px-3 py-1 font-medium text-white disabled:opacity-50"
                 >
                   {deleting ? "Deleting…" : "Yes, delete"}
                 </button>

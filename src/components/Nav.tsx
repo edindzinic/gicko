@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Calendar, Home, LogOut, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const links = [
-  { href: "/", label: "Home", icon: "🏠" },
-  { href: "/calendar", label: "Calendar", icon: "📅" },
-  { href: "/settings", label: "Settings", icon: "⚙️" },
+  { href: "/", label: "Home", Icon: Home },
+  { href: "/calendar", label: "Calendar", Icon: Calendar },
+  { href: "/settings", label: "Settings", Icon: Settings },
 ];
 
 export function Nav({ displayName }: { displayName: string }) {
@@ -24,52 +25,53 @@ export function Nav({ displayName }: { displayName: string }) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-black/5 bg-white px-4 py-6 sm:flex dark:border-white/10 dark:bg-slate-900">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-stone-200/70 bg-white px-4 py-6 sm:flex dark:border-stone-800 dark:bg-stone-900">
         <div className="mb-8 flex items-center gap-2 px-2">
           <span className="text-2xl">🍼</span>
-          <span className="text-lg font-semibold">Gicko</span>
+          <span className="text-lg font-semibold text-stone-800 dark:text-stone-100">Gicko</span>
         </div>
         <nav className="flex flex-1 flex-col gap-1">
-          {links.map((link) => (
+          {links.map(({ href, label, Icon }) => (
             <Link
-              key={link.href}
-              href={link.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                pathname === link.href
-                  ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
-                  : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              key={href}
+              href={href}
+              className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition ${
+                pathname === href
+                  ? "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
+                  : "text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
               }`}
             >
-              <span>{link.icon}</span>
-              {link.label}
+              <Icon className="h-4.5 w-4.5" strokeWidth={2} />
+              {label}
             </Link>
           ))}
         </nav>
-        <div className="border-t border-black/5 pt-4 dark:border-white/10">
-          <p className="mb-2 px-2 text-xs text-slate-400">{displayName}</p>
+        <div className="border-t border-stone-200/70 pt-4 dark:border-stone-800">
+          <p className="mb-2 px-2 text-xs text-stone-400">{displayName}</p>
           <button
             onClick={signOut}
-            className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+            className="flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-left text-sm text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
           >
+            <LogOut className="h-4 w-4" strokeWidth={2} />
             Sign out
           </button>
         </div>
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-black/5 bg-white/95 backdrop-blur sm:hidden dark:border-white/10 dark:bg-slate-900/95">
-        {links.map((link) => (
+      <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-stone-200/70 bg-white/95 backdrop-blur sm:hidden dark:border-stone-800 dark:bg-stone-900/95">
+        {links.map(({ href, label, Icon }) => (
           <Link
-            key={link.href}
-            href={link.href}
+            key={href}
+            href={href}
             className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs font-medium ${
-              pathname === link.href
-                ? "text-indigo-600 dark:text-indigo-400"
-                : "text-slate-500 dark:text-slate-400"
+              pathname === href
+                ? "text-violet-600 dark:text-violet-400"
+                : "text-stone-400 dark:text-stone-500"
             }`}
           >
-            <span className="text-xl">{link.icon}</span>
-            {link.label}
+            <Icon className="h-5 w-5" strokeWidth={2} />
+            {label}
           </Link>
         ))}
       </nav>

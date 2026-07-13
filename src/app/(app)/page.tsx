@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { addDays, differenceInMinutes, endOfDay, format, isToday, startOfDay, subDays } from "date-fns";
+import { ChevronLeft, ChevronRight, Milk, Moon, PencilLine, Sun, Timer } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { FeedingModal } from "@/components/FeedingModal";
@@ -127,7 +128,7 @@ export default function HomePage() {
   ).length;
 
   if (loading) {
-    return <div className="p-6 text-center text-slate-400">Loading…</div>;
+    return <div className="p-6 text-center text-stone-400">Loading…</div>;
   }
 
   return (
@@ -136,27 +137,29 @@ export default function HomePage() {
         <button
           onClick={() => setSelectedDate((d) => subDays(d, 1))}
           aria-label="Previous day"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
         >
-          ←
+          <ChevronLeft className="h-5 w-5" strokeWidth={2} />
         </button>
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-2xl font-semibold text-stone-800 dark:text-stone-100">
           {viewingToday ? "Today" : format(selectedDate, "EEEE, MMM d")}
         </h1>
         <button
           onClick={() => setSelectedDate((d) => addDays(d, 1))}
           disabled={viewingToday}
           aria-label="Next day"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-slate-400 dark:hover:bg-slate-800"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-stone-400 dark:hover:bg-stone-800"
         >
-          →
+          <ChevronRight className="h-5 w-5" strokeWidth={2} />
         </button>
       </div>
 
       {viewingToday && (
         <div
-          className={`mb-4 rounded-2xl bg-linear-to-br p-6 text-white shadow-sm transition-colors ${
-            openSession ? "from-indigo-700 to-slate-900" : "from-amber-400 to-orange-500"
+          className={`mb-4 rounded-3xl bg-linear-to-br p-6 text-white shadow-lg transition-colors ${
+            openSession
+              ? "from-violet-500 to-indigo-700 shadow-indigo-200 dark:shadow-none"
+              : "from-amber-300 to-orange-400 shadow-orange-200 dark:shadow-none"
           }`}
         >
           <p className="text-sm opacity-80">{openSession ? "Asleep since" : "Awake since"}</p>
@@ -170,10 +173,10 @@ export default function HomePage() {
             return statusSession && statusTime ? (
               <button
                 onClick={() => setEditingSession(statusSession)}
-                className="mb-4 flex items-center gap-1.5 text-3xl font-semibold underline decoration-white/40 underline-offset-4"
+                className="mb-4 flex items-center gap-2 text-3xl font-semibold"
               >
                 {formatTime(statusTime)}
-                <span className="text-base opacity-70">✎</span>
+                <PencilLine className="h-4 w-4 opacity-70" strokeWidth={2} />
               </button>
             ) : (
               <p className="mb-4 text-3xl font-semibold">—</p>
@@ -184,14 +187,14 @@ export default function HomePage() {
             openSession.is_night_sleep ? (
               <button
                 onClick={handleNightAwakening}
-                className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-indigo-700 shadow-sm active:scale-[0.98]"
+                className="w-full rounded-2xl bg-white/95 py-4 text-lg font-semibold text-violet-700 shadow-sm active:scale-[0.98]"
               >
                 🌙 Night awakening
               </button>
             ) : (
               <button
                 onClick={endSleep}
-                className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-indigo-700 shadow-sm active:scale-[0.98]"
+                className="w-full rounded-2xl bg-white/95 py-4 text-lg font-semibold text-violet-700 shadow-sm active:scale-[0.98]"
               >
                 😴 Woke up
               </button>
@@ -203,13 +206,13 @@ export default function HomePage() {
                   startSleep(true);
                   setNightAwakeningPending(false);
                 }}
-                className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-orange-700 shadow-sm active:scale-[0.98]"
+                className="w-full rounded-2xl bg-white/95 py-4 text-lg font-semibold text-orange-600 shadow-sm active:scale-[0.98]"
               >
                 🌙 Put back to sleep
               </button>
               <button
                 onClick={() => setNightAwakeningPending(false)}
-                className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
+                className="mt-2 w-full rounded-2xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
               >
                 ☀️ Woke up (done for the night)
               </button>
@@ -218,13 +221,13 @@ export default function HomePage() {
             <>
               <button
                 onClick={() => startSleep(false)}
-                className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-orange-700 shadow-sm active:scale-[0.98]"
+                className="w-full rounded-2xl bg-white/95 py-4 text-lg font-semibold text-orange-600 shadow-sm active:scale-[0.98]"
               >
                 🌙 Put down to sleep
               </button>
               <button
                 onClick={() => startSleep(true)}
-                className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
+                className="mt-2 w-full rounded-2xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
               >
                 🌆 Start night sleep
               </button>
@@ -236,7 +239,7 @@ export default function HomePage() {
       {viewingToday && (
         <button
           onClick={() => setFeedingModalSleepId(null)}
-          className="mb-6 w-full rounded-xl border-2 border-teal-500 py-4 text-lg font-semibold text-teal-600 active:scale-[0.98] dark:text-teal-400"
+          className="mb-6 w-full rounded-2xl border-2 border-rose-400 py-4 text-lg font-semibold text-rose-500 active:scale-[0.98] dark:border-rose-500 dark:text-rose-400"
         >
           🍼 Log a feeding
         </button>
@@ -244,26 +247,38 @@ export default function HomePage() {
 
       {/* Day rollup */}
       <div className="mb-6 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
-        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-          <p className="text-xl font-semibold">{formatDuration(totalSleepMinutes)}</p>
-          <p className="text-xs text-slate-500">Asleep</p>
+        <div className="rounded-3xl bg-violet-50 p-4 dark:bg-violet-500/10">
+          <Moon className="mx-auto mb-1 h-4 w-4 text-violet-500" strokeWidth={2} />
+          <p className="text-xl font-semibold text-stone-800 dark:text-stone-100">
+            {formatDuration(totalSleepMinutes)}
+          </p>
+          <p className="text-xs text-stone-500">Asleep</p>
         </div>
-        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-          <p className="text-xl font-semibold">{formatDuration(totalAwakeMinutes)}</p>
-          <p className="text-xs text-slate-500">Awake</p>
+        <div className="rounded-3xl bg-amber-50 p-4 dark:bg-amber-500/10">
+          <Sun className="mx-auto mb-1 h-4 w-4 text-amber-500" strokeWidth={2} />
+          <p className="text-xl font-semibold text-stone-800 dark:text-stone-100">
+            {formatDuration(totalAwakeMinutes)}
+          </p>
+          <p className="text-xs text-stone-500">Awake</p>
         </div>
-        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-          <p className="text-xl font-semibold">{dayFeedings.length}</p>
-          <p className="text-xs text-slate-500">Feedings</p>
+        <div className="rounded-3xl bg-rose-50 p-4 dark:bg-rose-500/10">
+          <Milk className="mx-auto mb-1 h-4 w-4 text-rose-500" strokeWidth={2} />
+          <p className="text-xl font-semibold text-stone-800 dark:text-stone-100">
+            {dayFeedings.length}
+          </p>
+          <p className="text-xs text-stone-500">Feedings</p>
         </div>
-        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-          <p className="text-xl font-semibold">{nightWakeUps}</p>
-          <p className="text-xs text-slate-500">Night wake-ups</p>
+        <div className="rounded-3xl bg-stone-100 p-4 dark:bg-stone-800">
+          <Timer className="mx-auto mb-1 h-4 w-4 text-stone-500" strokeWidth={2} />
+          <p className="text-xl font-semibold text-stone-800 dark:text-stone-100">
+            {nightWakeUps}
+          </p>
+          <p className="text-xs text-stone-500">Night wake-ups</p>
         </div>
       </div>
 
       {/* Timeline */}
-      <h2 className="mb-2 text-sm font-semibold text-slate-500">Timeline</h2>
+      <h2 className="mb-2 text-sm font-semibold text-stone-500">Timeline</h2>
       <DayTimeline
         day={dayKey}
         sessions={daySessions}
@@ -308,12 +323,12 @@ export default function HomePage() {
       )}
 
       {wakePrompt && (
-        <div className="fixed inset-x-4 bottom-20 z-20 flex items-center justify-between rounded-xl bg-slate-900 p-4 text-white shadow-lg sm:bottom-6 sm:left-auto sm:right-6 sm:w-80">
+        <div className="fixed inset-x-4 bottom-20 z-20 flex items-center justify-between rounded-2xl bg-stone-800 p-4 text-white shadow-lg sm:bottom-6 sm:left-auto sm:right-6 sm:w-80">
           <span className="text-sm">Did he eat during that wake-up?</span>
           <div className="flex gap-2">
             <button
               onClick={() => setWakePrompt(null)}
-              className="rounded-lg px-3 py-1.5 text-sm text-slate-300"
+              className="rounded-xl px-3 py-1.5 text-sm text-stone-300"
             >
               No
             </button>
@@ -322,7 +337,7 @@ export default function HomePage() {
                 setFeedingModalSleepId(wakePrompt);
                 setWakePrompt(null);
               }}
-              className="rounded-lg bg-teal-500 px-3 py-1.5 text-sm font-medium"
+              className="rounded-xl bg-rose-500 px-3 py-1.5 text-sm font-medium"
             >
               Log it
             </button>

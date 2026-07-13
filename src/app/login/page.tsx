@@ -45,18 +45,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-linear-to-b from-indigo-50 to-white px-4 dark:from-slate-900 dark:to-slate-950">
+    <div className="flex flex-1 items-center justify-center bg-linear-to-b from-violet-100 via-rose-50 to-stone-50 px-4 dark:from-stone-900 dark:via-stone-900 dark:to-stone-950">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-2xl border border-black/5 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-slate-900"
+        className="w-full max-w-sm rounded-3xl border border-stone-200/60 bg-white p-8 shadow-lg shadow-violet-200/40 dark:border-stone-800 dark:bg-stone-900 dark:shadow-none"
       >
         <div className="mb-6 text-center">
           <div className="mb-2 text-4xl">🍼</div>
-          <h1 className="text-xl font-semibold">Gicko</h1>
-          <p className="text-sm text-slate-500">Sign in to keep tracking</p>
+          <h1 className="text-xl font-semibold text-stone-800 dark:text-stone-100">Gicko</h1>
+          <p className="text-sm text-stone-500">Sign in to keep tracking</p>
         </div>
 
-        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
           Username
         </label>
         <input
@@ -67,10 +67,10 @@ export default function LoginPage() {
           required
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-3 text-base focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+          className="mb-4 w-full rounded-2xl border border-stone-200 px-4 py-3 text-base focus:border-violet-400 focus:ring-4 focus:ring-violet-100 focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:focus:ring-violet-500/20"
         />
 
-        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
           Password
         </label>
         <input
@@ -79,11 +79,11 @@ export default function LoginPage() {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mb-6 w-full rounded-lg border border-slate-300 px-3 py-3 text-base focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+          className="mb-6 w-full rounded-2xl border border-stone-200 px-4 py-3 text-base focus:border-violet-400 focus:ring-4 focus:ring-violet-100 focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:focus:ring-violet-500/20"
         />
 
         {error && (
-          <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
+          <p className="mb-4 rounded-2xl bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-950 dark:text-rose-400">
             {error}
           </p>
         )}
@@ -91,12 +91,12 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-indigo-600 py-3 text-base font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
+          className="w-full rounded-2xl bg-violet-500 py-3 text-base font-medium text-white transition hover:bg-violet-600 disabled:opacity-50"
         >
           {loading ? "Signing in…" : "Sign in"}
         </button>
 
-        <p className="mt-4 text-center text-xs text-slate-400">
+        <p className="mt-4 text-center text-xs text-stone-400">
           You&apos;ll stay signed in on this device.
         </p>
       </form>

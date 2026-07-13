@@ -15,6 +15,7 @@ import {
   subMonths,
   subWeeks,
 } from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { DayDetailPanel } from "@/components/DayDetailPanel";
@@ -109,25 +110,25 @@ export default function CalendarPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-2xl font-semibold text-stone-800 dark:text-stone-100">
           {view === "month"
             ? format(month, "MMMM yyyy")
             : `${format(weekStart, "MMM d")} – ${format(addWeeks(weekStart, 1), "MMM d")}`}
         </h1>
         <div className="flex items-center gap-3">
-          <div className="flex rounded-lg border border-slate-300 p-0.5 text-sm dark:border-slate-700">
+          <div className="flex rounded-2xl border border-stone-200 p-0.5 text-sm dark:border-stone-700">
             <button
               onClick={() => setView("month")}
-              className={`rounded-md px-3 py-1 ${
-                view === "month" ? "bg-indigo-600 text-white" : "text-slate-600 dark:text-slate-300"
+              className={`rounded-xl px-3 py-1 ${
+                view === "month" ? "bg-violet-500 text-white" : "text-stone-600 dark:text-stone-300"
               }`}
             >
               Month
             </button>
             <button
               onClick={() => setView("week")}
-              className={`rounded-md px-3 py-1 ${
-                view === "week" ? "bg-indigo-600 text-white" : "text-slate-600 dark:text-slate-300"
+              className={`rounded-xl px-3 py-1 ${
+                view === "week" ? "bg-violet-500 text-white" : "text-stone-600 dark:text-stone-300"
               }`}
             >
               Week
@@ -140,9 +141,10 @@ export default function CalendarPage() {
                   ? setMonth((m) => subMonths(m, 1))
                   : setWeekStart((w) => subWeeks(w, 1))
               }
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700"
+              aria-label="Previous"
+              className="flex h-9 w-9 items-center justify-center rounded-2xl border border-stone-200 text-stone-600 dark:border-stone-700 dark:text-stone-300"
             >
-              ←
+              <ChevronLeft className="h-4 w-4" strokeWidth={2} />
             </button>
             <button
               onClick={() =>
@@ -150,7 +152,7 @@ export default function CalendarPage() {
                   ? setMonth(startOfMonth(new Date()))
                   : setWeekStart(startOfWeek(new Date()))
               }
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700"
+              className="rounded-2xl border border-stone-200 px-3 py-1.5 text-sm text-stone-600 dark:border-stone-700 dark:text-stone-300"
             >
               Today
             </button>
@@ -160,9 +162,10 @@ export default function CalendarPage() {
                   ? setMonth((m) => addMonths(m, 1))
                   : setWeekStart((w) => addWeeks(w, 1))
               }
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700"
+              aria-label="Next"
+              className="flex h-9 w-9 items-center justify-center rounded-2xl border border-stone-200 text-stone-600 dark:border-stone-700 dark:text-stone-300"
             >
-              →
+              <ChevronRight className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -170,7 +173,7 @@ export default function CalendarPage() {
 
       {view === "month" ? (
         <>
-          <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-slate-400 sm:gap-2">
+          <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-stone-400 sm:gap-2">
             {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
               <div key={i} className="py-1">
                 {d}
@@ -188,15 +191,15 @@ export default function CalendarPage() {
                 <button
                   key={key}
                   onClick={() => setSelectedDay(key)}
-                  className={`flex min-h-20 flex-col items-start rounded-lg border p-1.5 text-left transition sm:min-h-24 sm:p-2 ${
+                  className={`flex min-h-20 flex-col items-start rounded-2xl border p-1.5 text-left transition sm:min-h-24 sm:p-2 ${
                     inMonth
-                      ? "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-                      : "border-transparent bg-slate-50 text-slate-300 dark:bg-slate-950"
-                  } ${isToday(day) ? "ring-2 ring-indigo-500" : ""}`}
+                      ? "border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900"
+                      : "border-transparent bg-stone-50 text-stone-300 dark:bg-stone-950"
+                  } ${isToday(day) ? "ring-2 ring-violet-400" : ""}`}
                 >
                   <span className="text-xs font-medium">{format(day, "d")}</span>
                   {stat && (
-                    <div className="mt-auto space-y-0.5 text-[10px] leading-tight text-slate-500 sm:text-xs">
+                    <div className="mt-auto space-y-0.5 text-[10px] leading-tight text-stone-500 sm:text-xs">
                       {stat.sleepMinutes > 0 && <p>😴 {formatDuration(stat.sleepMinutes)}</p>}
                       {stat.feedingCount > 0 && <p>🍼 ×{stat.feedingCount}</p>}
                       {stat.nightWakeUps > 0 && <p>🌙 ×{stat.nightWakeUps}</p>}

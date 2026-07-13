@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { addDays, format, isToday as isTodayFn, parseISO, startOfDay } from "date-fns";
+import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { FeedingModal } from "@/components/FeedingModal";
@@ -77,18 +78,21 @@ export function DayDetailPanel({
 
   return (
     <div className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-slate-900">
+      <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-6 shadow-xl sm:rounded-3xl dark:bg-stone-900">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">
             {format(parseISO(`${day}T00:00:00`), "EEEE, MMM d")}
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-            ✕
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800"
+          >
+            <X className="h-4 w-4" strokeWidth={2} />
           </button>
         </div>
 
         {loading ? (
-          <p className="py-8 text-center text-sm text-slate-400">Loading…</p>
+          <p className="py-8 text-center text-sm text-stone-400">Loading…</p>
         ) : (
           <>
             <div className="mb-6">
@@ -102,7 +106,7 @@ export function DayDetailPanel({
               />
             </div>
 
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+            <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
               Note
             </label>
             <textarea
@@ -111,9 +115,9 @@ export function DayDetailPanel({
               onBlur={saveNote}
               rows={3}
               placeholder="Anything worth remembering about this day…"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+              className="w-full rounded-2xl border border-stone-200 px-3 py-2.5 text-base dark:border-stone-700 dark:bg-stone-800"
             />
-            {savingNote && <p className="mt-1 text-xs text-slate-400">Saving…</p>}
+            {savingNote && <p className="mt-1 text-xs text-stone-400">Saving…</p>}
           </>
         )}
       </div>

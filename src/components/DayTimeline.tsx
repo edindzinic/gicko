@@ -50,14 +50,14 @@ export function DayTimeline({
   return (
     <div
       ref={containerRef}
-      className="relative max-h-[420px] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800"
+      className="relative max-h-[420px] overflow-y-auto rounded-2xl border border-stone-200 dark:border-stone-800"
     >
       <div className="flex">
-        <div className="relative w-14 shrink-0 bg-slate-50/50 dark:bg-slate-900/50" style={{ height: DAY_HEIGHT }}>
+        <div className="relative w-14 shrink-0 bg-stone-50/50 dark:bg-stone-900/50" style={{ height: DAY_HEIGHT }}>
           {Array.from({ length: 24 }, (_, hour) => (
             <div
               key={hour}
-              className="absolute right-2 -translate-y-1/2 text-[10px] text-slate-400"
+              className="absolute right-2 -translate-y-1/2 text-[10px] text-stone-400"
               style={{ top: topForMinutes(hour * 60) }}
             >
               {formatHourLabel(hour)}
@@ -66,13 +66,13 @@ export function DayTimeline({
         </div>
 
         <div
-          className="relative flex-1 border-l border-slate-100 dark:border-slate-800"
+          className="relative flex-1 border-l border-stone-100 dark:border-stone-800"
           style={{ height: DAY_HEIGHT }}
         >
           {Array.from({ length: 24 }, (_, hour) => (
             <div
               key={hour}
-              className="absolute inset-x-0 border-t border-slate-100 dark:border-slate-800"
+              className="absolute inset-x-0 border-t border-stone-100 dark:border-stone-800"
               style={{ top: topForMinutes(hour * 60) }}
             />
           ))}
@@ -116,7 +116,7 @@ export function DayTimeline({
             <button
               key={feeding.id}
               onClick={() => onSelectFeeding(feeding)}
-              className="absolute right-1 z-10 flex -translate-y-1/2 items-center gap-1 rounded-full bg-teal-500 px-2 py-1 text-[10px] font-medium text-white shadow ring-2 ring-white dark:ring-slate-900"
+              className="absolute right-1 z-10 flex -translate-y-1/2 items-center gap-1 rounded-full bg-rose-400 px-2 py-1 text-[10px] font-medium text-white shadow ring-2 ring-white dark:ring-stone-900"
               style={{ top: topForMinutes(minutesSinceMidnight(feeding.occurred_at)) }}
             >
               🍼{feeding.amount ? ` ${feeding.amount}${feeding.unit}` : ""}
@@ -124,7 +124,7 @@ export function DayTimeline({
           ))}
 
           {isEmpty && (
-            <p className="absolute inset-x-0 top-24 text-center text-sm text-slate-400">
+            <p className="absolute inset-x-0 top-24 text-center text-sm text-stone-400">
               Nothing logged {isToday ? "yet today" : "this day"}.
             </p>
           )}

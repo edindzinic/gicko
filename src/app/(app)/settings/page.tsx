@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { format, startOfMonth } from "date-fns";
+import { Download, Palette } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { findNightWakeUpEndTimes, formatDuration, isNightTime, sessionDurationMinutes } from "@/lib/time";
@@ -92,34 +93,38 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-6 sm:py-10">
-      <h1 className="mb-6 text-2xl font-semibold">Settings</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-stone-800 dark:text-stone-100">Settings</h1>
 
-      <div className="mb-6 rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-900">
-        <h2 className="mb-3 text-sm font-semibold text-slate-500">Appearance</h2>
+      <div className="mb-6 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-500">
+          <Palette className="h-4 w-4" strokeWidth={2} /> Appearance
+        </h2>
         <ThemeToggle />
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-900">
-        <h2 className="mb-3 text-sm font-semibold text-slate-500">Export data</h2>
+      <div className="rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-500">
+          <Download className="h-4 w-4" strokeWidth={2} /> Export data
+        </h2>
 
-        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
           From
         </label>
         <input
           type="date"
           value={from}
           onChange={(e) => setFrom(e.target.value)}
-          className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+          className="mb-4 w-full rounded-2xl border border-stone-200 px-3 py-2.5 text-base dark:border-stone-700 dark:bg-stone-800"
         />
 
-        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
           To
         </label>
         <input
           type="date"
           value={to}
           onChange={(e) => setTo(e.target.value)}
-          className="mb-6 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+          className="mb-6 w-full rounded-2xl border border-stone-200 px-3 py-2.5 text-base dark:border-stone-700 dark:bg-stone-800"
         />
 
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
@@ -127,12 +132,13 @@ export default function SettingsPage() {
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="w-full rounded-lg bg-indigo-600 py-3 text-base font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-500 py-3 text-base font-medium text-white hover:bg-violet-600 disabled:opacity-50"
         >
-          {exporting ? "Preparing…" : "📤 Export to Excel"}
+          <Download className="h-4 w-4" strokeWidth={2} />
+          {exporting ? "Preparing…" : "Export to Excel"}
         </button>
 
-        <p className="mt-4 text-center text-xs text-slate-400">
+        <p className="mt-4 text-center text-xs text-stone-400">
           Downloads an .xlsx with separate Sleep and Feedings sheets for the selected range.
         </p>
       </div>
