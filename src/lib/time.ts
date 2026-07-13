@@ -1,4 +1,4 @@
-import { differenceInMinutes, format, parseISO } from "date-fns";
+import { addDays, differenceInMinutes, format, parseISO, startOfDay } from "date-fns";
 
 const NIGHT_START_HOUR = 19; // 7pm
 const NIGHT_END_HOUR = 7; // 7am
@@ -33,4 +33,32 @@ export function toDatetimeLocalValue(iso: string | Date) {
   const date = typeof iso === "string" ? parseISO(iso) : iso;
   const offset = date.getTimezoneOffset();
   return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16);
+}
+
+export function minutesSinceMidnight(iso: string) {
+  const date = parseISO(iso);
+  return differenceInMinutes(date, startOfDay(date));
+}
+
+export type DaySegment = { day: string; startMinutes: number; endMinutes: number };
+
+/** Splits a (possibly overnight) interval into one segment per calendar day it touches. */
+export function splitIntervalByDay(startedAt: string, endedAt: string | null): DaySegment[] {
+  const start = parseISO(startedAt);
+  const end = endedAt ? parseISO(endedAt) : new Date();
+  if (end <= start) return [];
+
+  const segments: DaySegment[] = [];
+  let cursor = start;
+  while (cursor < end) {
+    const nextMidnight = startOfDay(addDays(cursor, 1));
+    const segmentEnd = end < nextMidnight ? end : nextMidnight;
+    segments.push({
+      day: format(cursor, "yyyy-MM-dd"),
+      startMinutes: differenceInMinutes(cursor, startOfDay(cursor)),
+      endMinutes: differenceInMinutes(segmentEnd, startOfDay(cursor)),
+    });
+    cursor = segmentEnd;
+  }
+  return segments;
 }

@@ -19,6 +19,7 @@ export function SleepEditModal({
     session.ended_at ? toDatetimeLocalValue(session.ended_at) : "",
   );
   const [notes, setNotes] = useState(session.notes ?? "");
+  const [isNightSleep, setIsNightSleep] = useState(session.is_night_sleep);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -35,6 +36,7 @@ export function SleepEditModal({
         started_at: new Date(startedAt).toISOString(),
         ended_at: endedAt ? new Date(endedAt).toISOString() : null,
         notes: notes || null,
+        is_night_sleep: isNightSleep,
       })
       .eq("id", session.id);
 
@@ -87,6 +89,16 @@ export function SleepEditModal({
           className="mb-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
         />
         <p className="mb-4 text-xs text-slate-400">Leave blank if still asleep.</p>
+
+        <label className="mb-4 flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+          <input
+            type="checkbox"
+            checked={isNightSleep}
+            onChange={(e) => setIsNightSleep(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300"
+          />
+          🌆 This was the night sleep (not a nap)
+        </label>
 
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
           Notes (optional)

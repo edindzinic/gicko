@@ -109,6 +109,7 @@ export type Database = {
           created_by: string | null
           ended_at: string | null
           id: string
+          is_night_sleep: boolean
           notes: string | null
           started_at: string
         }
@@ -117,6 +118,7 @@ export type Database = {
           created_by?: string | null
           ended_at?: string | null
           id?: string
+          is_night_sleep?: boolean
           notes?: string | null
           started_at: string
         }
@@ -125,6 +127,7 @@ export type Database = {
           created_by?: string | null
           ended_at?: string | null
           id?: string
+          is_night_sleep?: boolean
           notes?: string | null
           started_at?: string
         }

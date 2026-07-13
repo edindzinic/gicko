@@ -32,6 +32,7 @@ export default function HomePage() {
   const [wakePrompt, setWakePrompt] = useState<string | null>(null);
   const [editingSession, setEditingSession] = useState<SleepSession | null>(null);
   const [editingFeeding, setEditingFeeding] = useState<Feeding | null>(null);
+  const [elapsedMinutesToday, setElapsedMinutesToday] = useState(0);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -60,6 +61,7 @@ export default function HomePage() {
     setOpenSession(open ?? null);
     setTodaySessions(sessions ?? []);
     setTodayFeedings(feedings ?? []);
+    setElapsedMinutesToday(Math.max(0, Math.round((Date.now() - startOfToday().getTime()) / 60000)));
     setLoading(false);
   }, []);
 
@@ -68,25 +70,26 @@ export default function HomePage() {
     load();
   }, [load]);
 
-  async function handleToggleSleep() {
+  async function startSleep(isNightSleep: boolean) {
     const supabase = createClient();
+    await supabase
+      .from("sleep_sessions")
+      .insert({ started_at: new Date().toISOString(), is_night_sleep: isNightSleep });
+    load();
+  }
 
-    if (openSession) {
-      const endedAt = new Date().toISOString();
-      await supabase
-        .from("sleep_sessions")
-        .update({ ended_at: endedAt })
-        .eq("id", openSession.id);
+  async function endSleep() {
+    if (!openSession) return;
+    const supabase = createClient();
+    const endedAt = new Date().toISOString();
+    await supabase
+      .from("sleep_sessions")
+      .update({ ended_at: endedAt })
+      .eq("id", openSession.id);
 
-      if (isNightTime(endedAt)) {
-        setWakePrompt(openSession.id);
-      }
-    } else {
-      await supabase
-        .from("sleep_sessions")
-        .insert({ started_at: new Date().toISOString() });
+    if (isNightTime(endedAt)) {
+      setWakePrompt(openSession.id);
     }
-
     load();
   }
 
@@ -94,6 +97,7 @@ export default function HomePage() {
     (sum, s) => sum + sessionDurationMinutes(s.started_at, s.ended_at),
     0,
   );
+  const totalAwakeMinutes = Math.max(0, elapsedMinutesToday - totalSleepMinutes);
   const nightWakeUps = todaySessions.filter(
     (s) => s.ended_at && isNightTime(s.ended_at),
   ).length;
@@ -125,13 +129,26 @@ export default function HomePage() {
               : "—"}
         </p>
         <button
-          onClick={handleToggleSleep}
+          onClick={openSession ? endSleep : () => startSleep(false)}
           className={`w-full rounded-xl bg-white/95 py-4 text-lg font-semibold shadow-sm active:scale-[0.98] ${
             openSession ? "text-indigo-700" : "text-orange-700"
           }`}
         >
-          {openSession ? "😴 Woke up" : "🌙 Put down to sleep"}
+          {openSession
+            ? openSession.is_night_sleep
+              ? "🌅 Morning awakening"
+              : "😴 Woke up"
+            : "🌙 Put down to sleep"}
         </button>
+
+        {!openSession && (
+          <button
+            onClick={() => startSleep(true)}
+            className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
+          >
+            🌆 Start night sleep
+          </button>
+        )}
       </div>
 
       <button
@@ -142,10 +159,14 @@ export default function HomePage() {
       </button>
 
       {/* Today's rollup */}
-      <div className="mb-6 grid grid-cols-3 gap-3 text-center">
+      <div className="mb-6 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
         <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
           <p className="text-xl font-semibold">{formatDuration(totalSleepMinutes)}</p>
-          <p className="text-xs text-slate-500">Sleep today</p>
+          <p className="text-xs text-slate-500">Asleep today</p>
+        </div>
+        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
+          <p className="text-xl font-semibold">{formatDuration(totalAwakeMinutes)}</p>
+          <p className="text-xs text-slate-500">Awake today</p>
         </div>
         <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
           <p className="text-xl font-semibold">{todayFeedings.length}</p>
@@ -177,7 +198,7 @@ export default function HomePage() {
                 className="flex w-full items-center gap-3 rounded-xl bg-white p-3 text-left shadow-sm transition hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
               >
                 <span className="text-xl">
-                  {entry.type === "sleep" ? "🌙" : "🍼"}
+                  {entry.type === "sleep" ? (entry.item.is_night_sleep ? "🌆" : "🌙") : "🍼"}
                 </span>
                 <div className="flex-1">
                   {entry.type === "sleep" ? (

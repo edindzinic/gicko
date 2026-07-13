@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   addMonths,
+  addWeeks,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
@@ -12,20 +13,29 @@ import {
   startOfMonth,
   startOfWeek,
   subMonths,
+  subWeeks,
 } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { DayDetailPanel } from "@/components/DayDetailPanel";
+import { FeedingModal } from "@/components/FeedingModal";
+import { SleepEditModal } from "@/components/SleepEditModal";
+import { WeekView } from "@/components/WeekView";
 import { formatDuration, isNightTime, sessionDurationMinutes } from "@/lib/time";
 
 type DayStats = { sleepMinutes: number; feedingCount: number; nightWakeUps: number };
 
 export default function CalendarPage() {
+  const [view, setView] = useState<"month" | "week">("month");
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [sessions, setSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [feedings, setFeedings] = useState<Tables<"feedings">[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [editingSession, setEditingSession] = useState<Tables<"sleep_sessions"> | null>(null);
+  const [editingFeeding, setEditingFeeding] = useState<Tables<"feedings"> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [weekRefreshKey, setWeekRefreshKey] = useState(0);
 
   const gridStart = startOfWeek(startOfMonth(month));
   const gridEnd = endOfWeek(endOfMonth(month));
@@ -57,9 +67,10 @@ export default function CalendarPage() {
   }, [month]);
 
   useEffect(() => {
+    if (view !== "month") return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- refetch when month changes
     load();
-  }, [load]);
+  }, [load, view]);
 
   const statsByDay = useMemo(() => {
     const map = new Map<string, DayStats>();
@@ -79,71 +90,142 @@ export default function CalendarPage() {
     return map;
   }, [sessions, feedings]);
 
+  function refreshAfterEdit() {
+    setEditingSession(null);
+    setEditingFeeding(null);
+    load();
+    setWeekRefreshKey((k) => k + 1);
+  }
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{format(month, "MMMM yyyy")}</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setMonth((m) => subMonths(m, 1))}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700"
-          >
-            ←
-          </button>
-          <button
-            onClick={() => setMonth(startOfMonth(new Date()))}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700"
-          >
-            Today
-          </button>
-          <button
-            onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700"
-          >
-            →
-          </button>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">
+          {view === "month"
+            ? format(month, "MMMM yyyy")
+            : `${format(weekStart, "MMM d")} – ${format(addWeeks(weekStart, 1), "MMM d")}`}
+        </h1>
+        <div className="flex items-center gap-3">
+          <div className="flex rounded-lg border border-slate-300 p-0.5 text-sm dark:border-slate-700">
+            <button
+              onClick={() => setView("month")}
+              className={`rounded-md px-3 py-1 ${
+                view === "month" ? "bg-sky-600 text-white" : "text-slate-600 dark:text-slate-300"
+              }`}
+            >
+              Month
+            </button>
+            <button
+              onClick={() => setView("week")}
+              className={`rounded-md px-3 py-1 ${
+                view === "week" ? "bg-sky-600 text-white" : "text-slate-600 dark:text-slate-300"
+              }`}
+            >
+              Week
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() =>
+                view === "month"
+                  ? setMonth((m) => subMonths(m, 1))
+                  : setWeekStart((w) => subWeeks(w, 1))
+              }
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700"
+            >
+              ←
+            </button>
+            <button
+              onClick={() =>
+                view === "month"
+                  ? setMonth(startOfMonth(new Date()))
+                  : setWeekStart(startOfWeek(new Date()))
+              }
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700"
+            >
+              Today
+            </button>
+            <button
+              onClick={() =>
+                view === "month"
+                  ? setMonth((m) => addMonths(m, 1))
+                  : setWeekStart((w) => addWeeks(w, 1))
+              }
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700"
+            >
+              →
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-slate-400 sm:gap-2">
-        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-          <div key={i} className="py-1">
-            {d}
+      {view === "month" ? (
+        <>
+          <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-slate-400 sm:gap-2">
+            {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+              <div key={i} className="py-1">
+                {d}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <div className={`grid grid-cols-7 gap-1 sm:gap-2 ${loading ? "opacity-50" : ""}`}>
-        {days.map((day) => {
-          const key = format(day, "yyyy-MM-dd");
-          const stat = statsByDay.get(key);
-          const inMonth = isSameMonth(day, month);
+          <div className={`grid grid-cols-7 gap-1 sm:gap-2 ${loading ? "opacity-50" : ""}`}>
+            {days.map((day) => {
+              const key = format(day, "yyyy-MM-dd");
+              const stat = statsByDay.get(key);
+              const inMonth = isSameMonth(day, month);
 
-          return (
-            <button
-              key={key}
-              onClick={() => setSelectedDay(key)}
-              className={`flex min-h-20 flex-col items-start rounded-lg border p-1.5 text-left transition sm:min-h-24 sm:p-2 ${
-                inMonth
-                  ? "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-                  : "border-transparent bg-slate-50 text-slate-300 dark:bg-slate-950"
-              } ${isToday(day) ? "ring-2 ring-sky-500" : ""}`}
-            >
-              <span className="text-xs font-medium">{format(day, "d")}</span>
-              {stat && (
-                <div className="mt-auto space-y-0.5 text-[10px] leading-tight text-slate-500 sm:text-xs">
-                  {stat.sleepMinutes > 0 && <p>😴 {formatDuration(stat.sleepMinutes)}</p>}
-                  {stat.feedingCount > 0 && <p>🍼 ×{stat.feedingCount}</p>}
-                  {stat.nightWakeUps > 0 && <p>🌙 ×{stat.nightWakeUps}</p>}
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSelectedDay(key)}
+                  className={`flex min-h-20 flex-col items-start rounded-lg border p-1.5 text-left transition sm:min-h-24 sm:p-2 ${
+                    inMonth
+                      ? "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                      : "border-transparent bg-slate-50 text-slate-300 dark:bg-slate-950"
+                  } ${isToday(day) ? "ring-2 ring-sky-500" : ""}`}
+                >
+                  <span className="text-xs font-medium">{format(day, "d")}</span>
+                  {stat && (
+                    <div className="mt-auto space-y-0.5 text-[10px] leading-tight text-slate-500 sm:text-xs">
+                      {stat.sleepMinutes > 0 && <p>😴 {formatDuration(stat.sleepMinutes)}</p>}
+                      {stat.feedingCount > 0 && <p>🍼 ×{stat.feedingCount}</p>}
+                      {stat.nightWakeUps > 0 && <p>🌙 ×{stat.nightWakeUps}</p>}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <WeekView
+          key={weekRefreshKey}
+          weekStart={weekStart}
+          onSelectDay={setSelectedDay}
+          onSelectSession={setEditingSession}
+          onSelectFeeding={setEditingFeeding}
+        />
+      )}
 
       {selectedDay && (
         <DayDetailPanel day={selectedDay} onClose={() => setSelectedDay(null)} />
+      )}
+
+      {editingSession && (
+        <SleepEditModal
+          session={editingSession}
+          onClose={() => setEditingSession(null)}
+          onSaved={refreshAfterEdit}
+        />
+      )}
+
+      {editingFeeding && (
+        <FeedingModal
+          feeding={editingFeeding}
+          onClose={() => setEditingFeeding(null)}
+          onSaved={refreshAfterEdit}
+        />
       )}
     </div>
   );

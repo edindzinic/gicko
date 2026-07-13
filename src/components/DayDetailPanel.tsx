@@ -106,7 +106,9 @@ export function DayDetailPanel({
                     }
                     className="flex w-full items-center gap-3 rounded-xl bg-slate-50 p-3 text-left transition hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700"
                   >
-                    <span className="text-xl">{entry.type === "sleep" ? "🌙" : "🍼"}</span>
+                    <span className="text-xl">
+                      {entry.type === "sleep" ? (entry.item.is_night_sleep ? "🌆" : "🌙") : "🍼"}
+                    </span>
                     <div className="flex-1">
                       {entry.type === "sleep" ? (
                         <>
