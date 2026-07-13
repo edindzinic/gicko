@@ -152,13 +152,25 @@ export default function HomePage() {
           }`}
         >
           <p className="text-sm opacity-80">{openSession ? "Asleep since" : "Awake since"}</p>
-          <p className="mb-4 text-3xl font-semibold">
-            {openSession
-              ? formatTime(openSession.started_at)
-              : daySessions.find((s) => s.ended_at)
-                ? formatTime(daySessions[0].ended_at!)
-                : "—"}
-          </p>
+          {(() => {
+            const lastEndedSession = daySessions.find((s) => s.ended_at);
+            const statusSession = openSession ?? lastEndedSession ?? null;
+            const statusTime = openSession
+              ? openSession.started_at
+              : (lastEndedSession?.ended_at ?? null);
+
+            return statusSession && statusTime ? (
+              <button
+                onClick={() => setEditingSession(statusSession)}
+                className="mb-4 flex items-center gap-1.5 text-3xl font-semibold underline decoration-white/40 underline-offset-4"
+              >
+                {formatTime(statusTime)}
+                <span className="text-base opacity-70">✎</span>
+              </button>
+            ) : (
+              <p className="mb-4 text-3xl font-semibold">—</p>
+            );
+          })()}
 
           {openSession ? (
             openSession.is_night_sleep ? (
