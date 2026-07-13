@@ -21,7 +21,7 @@ import { DayDetailPanel } from "@/components/DayDetailPanel";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
 import { WeekView } from "@/components/WeekView";
-import { formatDuration, isNightTime, sessionDurationMinutes } from "@/lib/time";
+import { findNightWakeUpEndTimes, formatDuration, sessionDurationMinutes } from "@/lib/time";
 
 type DayStats = { sleepMinutes: number; feedingCount: number; nightWakeUps: number };
 
@@ -31,6 +31,7 @@ export default function CalendarPage() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [sessions, setSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [feedings, setFeedings] = useState<Tables<"feedings">[]>([]);
+  const [nightSessions, setNightSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [editingSession, setEditingSession] = useState<Tables<"sleep_sessions"> | null>(null);
   const [editingFeeding, setEditingFeeding] = useState<Tables<"feedings"> | null>(null);
@@ -47,7 +48,7 @@ export default function CalendarPage() {
     const start = gridStart.toISOString();
     const end = gridEnd.toISOString();
 
-    const [{ data: s }, { data: f }] = await Promise.all([
+    const [{ data: s }, { data: f }, { data: nights }] = await Promise.all([
       supabase
         .from("sleep_sessions")
         .select("*")
@@ -58,10 +59,13 @@ export default function CalendarPage() {
         .select("*")
         .gte("occurred_at", start)
         .lte("occurred_at", end),
+      // Fetched unscoped by month so wake-up chains aren't cut off at range edges.
+      supabase.from("sleep_sessions").select("*").eq("is_night_sleep", true),
     ]);
 
     setSessions(s ?? []);
     setFeedings(f ?? []);
+    setNightSessions(nights ?? []);
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [month]);
@@ -78,7 +82,6 @@ export default function CalendarPage() {
       const key = format(new Date(s.started_at), "yyyy-MM-dd");
       const stat = map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, nightWakeUps: 0 };
       stat.sleepMinutes += sessionDurationMinutes(s.started_at, s.ended_at);
-      if (s.ended_at && isNightTime(s.ended_at)) stat.nightWakeUps += 1;
       map.set(key, stat);
     }
     for (const f of feedings) {
@@ -87,8 +90,14 @@ export default function CalendarPage() {
       stat.feedingCount += 1;
       map.set(key, stat);
     }
+    for (const wakeUpEnd of findNightWakeUpEndTimes(nightSessions)) {
+      const key = format(new Date(wakeUpEnd), "yyyy-MM-dd");
+      const stat = map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, nightWakeUps: 0 };
+      stat.nightWakeUps += 1;
+      map.set(key, stat);
+    }
     return map;
-  }, [sessions, feedings]);
+  }, [sessions, feedings, nightSessions]);
 
   function refreshAfterEdit() {
     setEditingSession(null);

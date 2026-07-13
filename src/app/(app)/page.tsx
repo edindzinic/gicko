@@ -7,7 +7,13 @@ import type { Tables } from "@/lib/database.types";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
 import { DayTimeline } from "@/components/DayTimeline";
-import { formatDuration, formatTime, isNightTime, splitIntervalByDay } from "@/lib/time";
+import {
+  findNightWakeUpEndTimes,
+  formatDuration,
+  formatTime,
+  isNightTime,
+  splitIntervalByDay,
+} from "@/lib/time";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
@@ -17,6 +23,7 @@ export default function HomePage() {
   const [openSession, setOpenSession] = useState<SleepSession | null>(null);
   const [daySessions, setDaySessions] = useState<SleepSession[]>([]);
   const [dayFeedings, setDayFeedings] = useState<Feeding[]>([]);
+  const [nightSessions, setNightSessions] = useState<SleepSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedingModalSleepId, setFeedingModalSleepId] = useState<string | null | undefined>(
     undefined,
@@ -35,31 +42,35 @@ export default function HomePage() {
     const dayStart = startOfDay(selectedDate).toISOString();
     const dayEnd = endOfDay(selectedDate).toISOString();
 
-    const [{ data: open }, { data: sessions }, { data: feedings }] = await Promise.all([
-      supabase
-        .from("sleep_sessions")
-        .select("*")
-        .is("ended_at", null)
-        .order("started_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("sleep_sessions")
-        .select("*")
-        .lte("started_at", dayEnd)
-        .or(`ended_at.gte.${dayStart},ended_at.is.null`)
-        .order("started_at", { ascending: false }),
-      supabase
-        .from("feedings")
-        .select("*")
-        .gte("occurred_at", dayStart)
-        .lte("occurred_at", dayEnd)
-        .order("occurred_at", { ascending: false }),
-    ]);
+    const [{ data: open }, { data: sessions }, { data: feedings }, { data: nights }] =
+      await Promise.all([
+        supabase
+          .from("sleep_sessions")
+          .select("*")
+          .is("ended_at", null)
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("sleep_sessions")
+          .select("*")
+          .lte("started_at", dayEnd)
+          .or(`ended_at.gte.${dayStart},ended_at.is.null`)
+          .order("started_at", { ascending: false }),
+        supabase
+          .from("feedings")
+          .select("*")
+          .gte("occurred_at", dayStart)
+          .lte("occurred_at", dayEnd)
+          .order("occurred_at", { ascending: false }),
+        // Fetched unscoped by day so wake-up chains aren't cut off at midnight.
+        supabase.from("sleep_sessions").select("*").eq("is_night_sleep", true),
+      ]);
 
     setOpenSession(open ?? null);
     setDaySessions(sessions ?? []);
     setDayFeedings(feedings ?? []);
+    setNightSessions(nights ?? []);
     setElapsedMinutes(
       isToday(selectedDate)
         ? Math.max(0, differenceInMinutes(new Date(), startOfDay(selectedDate)))
@@ -111,11 +122,8 @@ export default function HomePage() {
     0,
   );
   const totalAwakeMinutes = Math.max(0, elapsedMinutes - totalSleepMinutes);
-  const nightWakeUps = daySessions.filter(
-    (s) =>
-      s.ended_at &&
-      isNightTime(s.ended_at) &&
-      format(new Date(s.ended_at), "yyyy-MM-dd") === dayKey,
+  const nightWakeUps = findNightWakeUpEndTimes(nightSessions).filter(
+    (t) => format(new Date(t), "yyyy-MM-dd") === dayKey,
   ).length;
 
   if (loading) {

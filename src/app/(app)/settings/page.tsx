@@ -4,7 +4,7 @@ import { useState } from "react";
 import { format, startOfMonth } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { formatDuration, isNightTime, sessionDurationMinutes } from "@/lib/time";
+import { findNightWakeUpEndTimes, formatDuration, isNightTime, sessionDurationMinutes } from "@/lib/time";
 
 function toInputValue(date: Date) {
   return format(date, "yyyy-MM-dd");
@@ -25,7 +25,7 @@ export default function SettingsPage() {
       const rangeStart = `${from}T00:00:00`;
       const rangeEnd = `${to}T23:59:59.999`;
 
-      const [{ data: sessions, error: sErr }, { data: feedings, error: fErr }] =
+      const [{ data: sessions, error: sErr }, { data: feedings, error: fErr }, { data: nights }] =
         await Promise.all([
           supabase
             .from("sleep_sessions")
@@ -39,6 +39,8 @@ export default function SettingsPage() {
             .gte("occurred_at", rangeStart)
             .lte("occurred_at", rangeEnd)
             .order("occurred_at", { ascending: true }),
+          // Fetched unscoped by range so wake-up chains aren't cut off at the edges.
+          supabase.from("sleep_sessions").select("*").eq("is_night_sleep", true),
         ]);
 
       if (sErr || fErr) {
@@ -49,12 +51,14 @@ export default function SettingsPage() {
 
       const XLSX = await import("xlsx");
 
+      const wakeUpEndTimes = new Set(findNightWakeUpEndTimes(nights ?? []));
+
       const sleepRows = (sessions ?? []).map((s) => ({
         Date: format(new Date(s.started_at), "yyyy-MM-dd"),
         "Started at": format(new Date(s.started_at), "HH:mm"),
         "Ended at": s.ended_at ? format(new Date(s.ended_at), "HH:mm") : "still asleep",
         Duration: formatDuration(sessionDurationMinutes(s.started_at, s.ended_at)),
-        "Night wake-up": s.ended_at && isNightTime(s.ended_at) ? "Yes" : "No",
+        "Night wake-up": s.ended_at && wakeUpEndTimes.has(s.ended_at) ? "Yes" : "No",
         Notes: s.notes ?? "",
       }));
 

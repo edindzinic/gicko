@@ -58,6 +58,31 @@ export function minutesSinceMidnight(iso: string) {
   return differenceInMinutes(date, startOfDay(date));
 }
 
+type NightSleepLike = { started_at: string; ended_at: string | null; is_night_sleep: boolean };
+
+/**
+ * Returns the ended_at timestamps that represent a true night wake-up —
+ * i.e. the baby went back to sleep afterward — excluding the final
+ * awakening of each night (the "morning awakening", which ends the
+ * night for good rather than being followed by more sleep).
+ */
+export function findNightWakeUpEndTimes(sessions: NightSleepLike[]): string[] {
+  const nights = sessions
+    .filter((s): s is NightSleepLike & { ended_at: string } => s.is_night_sleep && !!s.ended_at)
+    .sort((a, b) => parseISO(a.started_at).getTime() - parseISO(b.started_at).getTime());
+
+  const wakeUpEnds: string[] = [];
+  for (let i = 0; i < nights.length - 1; i++) {
+    const current = nights[i];
+    const next = nights[i + 1];
+    const gapMinutes = differenceInMinutes(parseISO(next.started_at), parseISO(current.ended_at));
+    if (gapMinutes >= 0 && gapMinutes <= 180) {
+      wakeUpEnds.push(current.ended_at);
+    }
+  }
+  return wakeUpEnds;
+}
+
 export type DaySegment = { day: string; startMinutes: number; endMinutes: number };
 
 /** Splits a (possibly overnight) interval into one segment per calendar day it touches. */
