@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { format, startOfMonth } from "date-fns";
-import { Download, Palette } from "lucide-react";
+import { Download, LogOut, Palette, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { findNightWakeUpEndTimes, formatDuration, isNightTime, sessionDurationMinutes } from "@/lib/time";
@@ -12,10 +13,39 @@ function toInputValue(date: Date) {
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [from, setFrom] = useState(toInputValue(startOfMonth(new Date())));
   const [to, setTo] = useState(toInputValue(new Date()));
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const loadProfile = useCallback(async () => {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .single();
+    setDisplayName(profile?.display_name ?? null);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial profile fetch on mount
+    loadProfile();
+  }, [loadProfile]);
+
+  async function signOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   async function handleExport() {
     setExporting(true);
@@ -94,6 +124,22 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-6 sm:py-10">
       <h1 className="mb-6 text-2xl font-semibold text-stone-800 dark:text-stone-100">Settings</h1>
+
+      <div className="mb-6 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-500">
+          <User className="h-4 w-4" strokeWidth={2} /> Account
+        </h2>
+        <p className="mb-4 text-sm text-stone-600 dark:text-stone-300">
+          Signed in as <span className="font-medium">{displayName ?? "…"}</span>
+        </p>
+        <button
+          onClick={signOut}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-stone-200 py-3 text-base font-medium text-stone-600 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+        >
+          <LogOut className="h-4 w-4" strokeWidth={2} />
+          Sign out
+        </button>
+      </div>
 
       <div className="mb-6 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-500">

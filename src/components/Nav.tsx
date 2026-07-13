@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Calendar, Home, LogOut, Settings } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { usePathname } from "next/navigation";
+import { Calendar, Home, Settings } from "lucide-react";
 
 const links = [
   { href: "/", label: "Home", Icon: Home },
@@ -11,16 +10,8 @@ const links = [
   { href: "/settings", label: "Settings", Icon: Settings },
 ];
 
-export function Nav({ displayName }: { displayName: string }) {
+export function Nav() {
   const pathname = usePathname();
-  const router = useRouter();
-
-  async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  }
 
   return (
     <>
@@ -46,16 +37,6 @@ export function Nav({ displayName }: { displayName: string }) {
             </Link>
           ))}
         </nav>
-        <div className="border-t border-stone-200/70 pt-4 dark:border-stone-800">
-          <p className="mb-2 px-2 text-xs text-stone-400">{displayName}</p>
-          <button
-            onClick={signOut}
-            className="flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-left text-sm text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
-          >
-            <LogOut className="h-4 w-4" strokeWidth={2} />
-            Sign out
-          </button>
-        </div>
       </aside>
 
       {/* Mobile bottom nav */}
