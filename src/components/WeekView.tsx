@@ -91,7 +91,7 @@ export function WeekView({
   }
 
   return (
-    <div className={loading ? "opacity-50" : ""}>
+    <div className={`isolate ${loading ? "opacity-50" : ""}`}>
       <div className="overflow-x-auto">
         <div className="flex min-w-[720px]">
           <div className="w-14 shrink-0" />

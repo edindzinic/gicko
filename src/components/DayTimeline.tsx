@@ -50,7 +50,7 @@ export function DayTimeline({
   return (
     <div
       ref={containerRef}
-      className="relative max-h-[420px] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-900"
+      className="relative isolate max-h-[420px] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-900"
     >
       <div className="flex">
         <div className="relative w-14 shrink-0 bg-neutral-50/50 dark:bg-neutral-950/50" style={{ height: DAY_HEIGHT }}>

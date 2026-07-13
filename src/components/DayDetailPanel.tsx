@@ -77,8 +77,17 @@ export function DayDetailPanel({
   }
 
   return (
-    <div className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-neutral-950">
+    <div
+      className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-neutral-950"
+      >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             {format(parseISO(`${day}T00:00:00`), "EEEE, MMM d")}
