@@ -107,7 +107,13 @@ export default function HomePage() {
       <h1 className="mb-6 text-2xl font-semibold">Today</h1>
 
       {/* Status card */}
-      <div className="mb-4 rounded-2xl bg-linear-to-br from-sky-500 to-indigo-500 p-6 text-white shadow-sm">
+      <div
+        className={`mb-4 rounded-2xl bg-linear-to-br p-6 text-white shadow-sm transition-colors ${
+          openSession
+            ? "from-indigo-700 to-slate-900"
+            : "from-amber-400 to-orange-500"
+        }`}
+      >
         <p className="text-sm opacity-80">
           {openSession ? "Asleep since" : "Awake since"}
         </p>
@@ -120,7 +126,9 @@ export default function HomePage() {
         </p>
         <button
           onClick={handleToggleSleep}
-          className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-sky-700 shadow-sm active:scale-[0.98]"
+          className={`w-full rounded-xl bg-white/95 py-4 text-lg font-semibold shadow-sm active:scale-[0.98] ${
+            openSession ? "text-indigo-700" : "text-orange-700"
+          }`}
         >
           {openSession ? "😴 Woke up" : "🌙 Put down to sleep"}
         </button>
