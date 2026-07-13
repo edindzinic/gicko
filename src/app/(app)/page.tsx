@@ -1,42 +1,39 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { addDays, differenceInMinutes, endOfDay, format, isToday, startOfDay, subDays } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
-import {
-  formatDuration,
-  formatTime,
-  isNightTime,
-  sessionDurationMinutes,
-} from "@/lib/time";
+import { DayTimeline } from "@/components/DayTimeline";
+import { formatDuration, formatTime, isNightTime, splitIntervalByDay } from "@/lib/time";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
 
-function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
 export default function HomePage() {
+  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const [openSession, setOpenSession] = useState<SleepSession | null>(null);
-  const [todaySessions, setTodaySessions] = useState<SleepSession[]>([]);
-  const [todayFeedings, setTodayFeedings] = useState<Feeding[]>([]);
+  const [daySessions, setDaySessions] = useState<SleepSession[]>([]);
+  const [dayFeedings, setDayFeedings] = useState<Feeding[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedingModalSleepId, setFeedingModalSleepId] = useState<string | null | undefined>(
     undefined,
   );
   const [wakePrompt, setWakePrompt] = useState<string | null>(null);
+  const [nightAwakeningPending, setNightAwakeningPending] = useState(false);
   const [editingSession, setEditingSession] = useState<SleepSession | null>(null);
   const [editingFeeding, setEditingFeeding] = useState<Feeding | null>(null);
-  const [elapsedMinutesToday, setElapsedMinutesToday] = useState(0);
+  const [elapsedMinutes, setElapsedMinutes] = useState(0);
+
+  const viewingToday = isToday(selectedDate);
+  const dayKey = format(selectedDate, "yyyy-MM-dd");
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const todayIso = startOfToday().toISOString();
+    const dayStart = startOfDay(selectedDate).toISOString();
+    const dayEnd = endOfDay(selectedDate).toISOString();
 
     const [{ data: open }, { data: sessions }, { data: feedings }] = await Promise.all([
       supabase
@@ -49,24 +46,30 @@ export default function HomePage() {
       supabase
         .from("sleep_sessions")
         .select("*")
-        .gte("started_at", todayIso)
+        .lte("started_at", dayEnd)
+        .or(`ended_at.gte.${dayStart},ended_at.is.null`)
         .order("started_at", { ascending: false }),
       supabase
         .from("feedings")
         .select("*")
-        .gte("occurred_at", todayIso)
+        .gte("occurred_at", dayStart)
+        .lte("occurred_at", dayEnd)
         .order("occurred_at", { ascending: false }),
     ]);
 
     setOpenSession(open ?? null);
-    setTodaySessions(sessions ?? []);
-    setTodayFeedings(feedings ?? []);
-    setElapsedMinutesToday(Math.max(0, Math.round((Date.now() - startOfToday().getTime()) / 60000)));
+    setDaySessions(sessions ?? []);
+    setDayFeedings(feedings ?? []);
+    setElapsedMinutes(
+      isToday(selectedDate)
+        ? Math.max(0, differenceInMinutes(new Date(), startOfDay(selectedDate)))
+        : 1440,
+    );
     setLoading(false);
-  }, []);
+  }, [selectedDate]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- refetch when selected day changes
     load();
   }, [load]);
 
@@ -93,13 +96,26 @@ export default function HomePage() {
     load();
   }
 
-  const totalSleepMinutes = todaySessions.reduce(
-    (sum, s) => sum + sessionDurationMinutes(s.started_at, s.ended_at),
+  async function handleNightAwakening() {
+    await endSleep();
+    setNightAwakeningPending(true);
+  }
+
+  const daySegments = daySessions.flatMap((session) =>
+    splitIntervalByDay(session.started_at, session.ended_at)
+      .filter((seg) => seg.day === dayKey)
+      .map((seg) => ({ session, ...seg })),
+  );
+  const totalSleepMinutes = daySegments.reduce(
+    (sum, seg) => sum + (seg.endMinutes - seg.startMinutes),
     0,
   );
-  const totalAwakeMinutes = Math.max(0, elapsedMinutesToday - totalSleepMinutes);
-  const nightWakeUps = todaySessions.filter(
-    (s) => s.ended_at && isNightTime(s.ended_at),
+  const totalAwakeMinutes = Math.max(0, elapsedMinutes - totalSleepMinutes);
+  const nightWakeUps = daySessions.filter(
+    (s) =>
+      s.ended_at &&
+      isNightTime(s.ended_at) &&
+      format(new Date(s.ended_at), "yyyy-MM-dd") === dayKey,
   ).length;
 
   if (loading) {
@@ -108,77 +124,114 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6 sm:py-10">
-      <h1 className="mb-6 text-2xl font-semibold">Today</h1>
-
-      {/* Status card */}
-      <div
-        className={`mb-4 rounded-2xl bg-linear-to-br p-6 text-white shadow-sm transition-colors ${
-          openSession
-            ? "from-indigo-700 to-slate-900"
-            : "from-amber-400 to-orange-500"
-        }`}
-      >
-        <p className="text-sm opacity-80">
-          {openSession ? "Asleep since" : "Awake since"}
-        </p>
-        <p className="mb-4 text-3xl font-semibold">
-          {openSession
-            ? formatTime(openSession.started_at)
-            : todaySessions.find((s) => s.ended_at)
-              ? formatTime(todaySessions[0].ended_at!)
-              : "—"}
-        </p>
+      <div className="mb-6 flex items-center justify-between">
         <button
-          onClick={openSession ? endSleep : () => startSleep(false)}
-          className={`w-full rounded-xl bg-white/95 py-4 text-lg font-semibold shadow-sm active:scale-[0.98] ${
-            openSession ? "text-indigo-700" : "text-orange-700"
+          onClick={() => setSelectedDate((d) => subDays(d, 1))}
+          aria-label="Previous day"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+        >
+          ←
+        </button>
+        <h1 className="text-2xl font-semibold">
+          {viewingToday ? "Today" : format(selectedDate, "EEEE, MMM d")}
+        </h1>
+        <button
+          onClick={() => setSelectedDate((d) => addDays(d, 1))}
+          disabled={viewingToday}
+          aria-label="Next day"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-slate-400 dark:hover:bg-slate-800"
+        >
+          →
+        </button>
+      </div>
+
+      {viewingToday && (
+        <div
+          className={`mb-4 rounded-2xl bg-linear-to-br p-6 text-white shadow-sm transition-colors ${
+            openSession ? "from-indigo-700 to-slate-900" : "from-amber-400 to-orange-500"
           }`}
         >
-          {openSession
-            ? openSession.is_night_sleep
-              ? "🌙 Night awakening"
-              : "😴 Woke up"
-            : "🌙 Put down to sleep"}
-        </button>
+          <p className="text-sm opacity-80">{openSession ? "Asleep since" : "Awake since"}</p>
+          <p className="mb-4 text-3xl font-semibold">
+            {openSession
+              ? formatTime(openSession.started_at)
+              : daySessions.find((s) => s.ended_at)
+                ? formatTime(daySessions[0].ended_at!)
+                : "—"}
+          </p>
 
-        {!openSession && (
-          <button
-            onClick={() => startSleep(true)}
-            className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
-          >
-            🌆 Start night sleep
-          </button>
-        )}
-
-        {openSession?.is_night_sleep && (
-          <button
-            onClick={endSleep}
-            className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
-          >
-            🌅 Morning awakening
-          </button>
-        )}
-      </div>
+          {openSession ? (
+            openSession.is_night_sleep ? (
+              <button
+                onClick={handleNightAwakening}
+                className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-indigo-700 shadow-sm active:scale-[0.98]"
+              >
+                🌙 Night awakening
+              </button>
+            ) : (
+              <button
+                onClick={endSleep}
+                className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-indigo-700 shadow-sm active:scale-[0.98]"
+              >
+                😴 Woke up
+              </button>
+            )
+          ) : nightAwakeningPending ? (
+            <>
+              <button
+                onClick={() => {
+                  startSleep(true);
+                  setNightAwakeningPending(false);
+                }}
+                className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-orange-700 shadow-sm active:scale-[0.98]"
+              >
+                🌙 Put back to sleep
+              </button>
+              <button
+                onClick={() => setNightAwakeningPending(false)}
+                className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
+              >
+                ☀️ Woke up (done for the night)
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => startSleep(false)}
+                className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-orange-700 shadow-sm active:scale-[0.98]"
+              >
+                🌙 Put down to sleep
+              </button>
+              <button
+                onClick={() => startSleep(true)}
+                className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
+              >
+                🌆 Start night sleep
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <button
         onClick={() => setFeedingModalSleepId(null)}
-        className="mb-6 w-full rounded-xl border-2 border-sky-500 py-4 text-lg font-semibold text-sky-600 active:scale-[0.98] dark:text-sky-400"
+        className="mb-6 w-full rounded-xl border-2 border-teal-500 py-4 text-lg font-semibold text-teal-600 active:scale-[0.98] dark:text-teal-400"
       >
         🍼 Log a feeding
       </button>
 
-      {/* Today's rollup */}
+      {/* Day rollup */}
       <div className="mb-6 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
         <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
           <p className="text-xl font-semibold">{formatDuration(totalSleepMinutes)}</p>
-          <p className="text-xs text-slate-500">Asleep today</p>
+          <p className="text-xs text-slate-500">Asleep</p>
         </div>
         <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
           <p className="text-xl font-semibold">{formatDuration(totalAwakeMinutes)}</p>
-          <p className="text-xs text-slate-500">Awake today</p>
+          <p className="text-xs text-slate-500">Awake</p>
         </div>
         <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-          <p className="text-xl font-semibold">{todayFeedings.length}</p>
+          <p className="text-xl font-semibold">{dayFeedings.length}</p>
           <p className="text-xs text-slate-500">Feedings</p>
         </div>
         <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
@@ -189,65 +242,19 @@ export default function HomePage() {
 
       {/* Timeline */}
       <h2 className="mb-2 text-sm font-semibold text-slate-500">Timeline</h2>
-      <ul className="space-y-2">
-        {[...todaySessions.map((s) => ({ type: "sleep" as const, item: s })), ...todayFeedings.map((f) => ({ type: "feeding" as const, item: f }))]
-          .sort((a, b) => {
-            const aTime = a.type === "sleep" ? a.item.started_at : a.item.occurred_at;
-            const bTime = b.type === "sleep" ? b.item.started_at : b.item.occurred_at;
-            return new Date(bTime).getTime() - new Date(aTime).getTime();
-          })
-          .map((entry) => (
-            <li key={`${entry.type}-${entry.item.id}`}>
-              <button
-                onClick={() =>
-                  entry.type === "sleep"
-                    ? setEditingSession(entry.item)
-                    : setEditingFeeding(entry.item)
-                }
-                className="flex w-full items-center gap-3 rounded-xl bg-white p-3 text-left shadow-sm transition hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
-              >
-                <span className="text-xl">
-                  {entry.type === "sleep" ? (entry.item.is_night_sleep ? "🌆" : "🌙") : "🍼"}
-                </span>
-                <div className="flex-1">
-                  {entry.type === "sleep" ? (
-                    <>
-                      <p className="text-sm font-medium">
-                        {formatTime(entry.item.started_at)} –{" "}
-                        {entry.item.ended_at ? formatTime(entry.item.ended_at) : "now"}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {formatDuration(
-                          sessionDurationMinutes(entry.item.started_at, entry.item.ended_at),
-                        )}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm font-medium capitalize">
-                        {entry.item.feed_type}
-                        {entry.item.amount ? ` · ${entry.item.amount}${entry.item.unit}` : ""}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {formatTime(entry.item.occurred_at)}
-                      </p>
-                    </>
-                  )}
-                </div>
-                <span className="text-slate-300">✎</span>
-              </button>
-            </li>
-          ))}
-        {todaySessions.length === 0 && todayFeedings.length === 0 && (
-          <p className="py-8 text-center text-sm text-slate-400">
-            Nothing logged yet today.
-          </p>
-        )}
-      </ul>
+      <DayTimeline
+        day={dayKey}
+        sessions={daySessions}
+        feedings={dayFeedings}
+        isToday={viewingToday}
+        onSelectSession={setEditingSession}
+        onSelectFeeding={setEditingFeeding}
+      />
 
       {feedingModalSleepId !== undefined && (
         <FeedingModal
           defaultSleepSessionId={feedingModalSleepId}
+          defaultDate={selectedDate}
           onClose={() => setFeedingModalSleepId(undefined)}
           onSaved={() => {
             setFeedingModalSleepId(undefined);
@@ -293,7 +300,7 @@ export default function HomePage() {
                 setFeedingModalSleepId(wakePrompt);
                 setWakePrompt(null);
               }}
-              className="rounded-lg bg-sky-500 px-3 py-1.5 text-sm font-medium"
+              className="rounded-lg bg-teal-500 px-3 py-1.5 text-sm font-medium"
             >
               Log it
             </button>

@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { format, parseISO } from "date-fns";
+import { addDays, format, isToday as isTodayFn, parseISO, startOfDay } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
-import { formatDuration, formatTime, sessionDurationMinutes } from "@/lib/time";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
+import { DayTimeline } from "@/components/DayTimeline";
 
 export function DayDetailPanel({
   day,
@@ -26,21 +26,22 @@ export function DayDetailPanel({
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const start = `${day}T00:00:00`;
-    const end = `${day}T23:59:59.999`;
+    const dayDate = parseISO(`${day}T00:00:00`);
+    const dayStart = startOfDay(dayDate).toISOString();
+    const dayEnd = addDays(startOfDay(dayDate), 1).toISOString();
 
     const [{ data: s }, { data: f }, { data: c }] = await Promise.all([
       supabase
         .from("sleep_sessions")
         .select("*")
-        .gte("started_at", start)
-        .lte("started_at", end)
+        .lte("started_at", dayEnd)
+        .or(`ended_at.gte.${dayStart},ended_at.is.null`)
         .order("started_at", { ascending: true }),
       supabase
         .from("feedings")
         .select("*")
-        .gte("occurred_at", start)
-        .lte("occurred_at", end)
+        .gte("occurred_at", dayStart)
+        .lte("occurred_at", dayEnd)
         .order("occurred_at", { ascending: true }),
       supabase.from("day_comments").select("*").eq("day", day).maybeSingle(),
     ]);
@@ -74,11 +75,6 @@ export function DayDetailPanel({
     setSavingNote(false);
   }
 
-  const timeline = [
-    ...sessions.map((s) => ({ type: "sleep" as const, item: s, time: s.started_at })),
-    ...feedings.map((f) => ({ type: "feeding" as const, item: f, time: f.occurred_at })),
-  ].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
-
   return (
     <div className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center">
       <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-slate-900">
@@ -95,55 +91,16 @@ export function DayDetailPanel({
           <p className="py-8 text-center text-sm text-slate-400">Loading…</p>
         ) : (
           <>
-            <ul className="mb-6 space-y-2">
-              {timeline.map((entry) => (
-                <li key={`${entry.type}-${entry.item.id}`}>
-                  <button
-                    onClick={() =>
-                      entry.type === "sleep"
-                        ? setEditingSession(entry.item)
-                        : setEditingFeeding(entry.item)
-                    }
-                    className="flex w-full items-center gap-3 rounded-xl bg-slate-50 p-3 text-left transition hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700"
-                  >
-                    <span className="text-xl">
-                      {entry.type === "sleep" ? (entry.item.is_night_sleep ? "🌆" : "🌙") : "🍼"}
-                    </span>
-                    <div className="flex-1">
-                      {entry.type === "sleep" ? (
-                        <>
-                          <p className="text-sm font-medium">
-                            {formatTime(entry.item.started_at)} –{" "}
-                            {entry.item.ended_at ? formatTime(entry.item.ended_at) : "now"}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {formatDuration(
-                              sessionDurationMinutes(entry.item.started_at, entry.item.ended_at),
-                            )}
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-sm font-medium capitalize">
-                            {entry.item.feed_type}
-                            {entry.item.amount ? ` · ${entry.item.amount}${entry.item.unit}` : ""}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {formatTime(entry.item.occurred_at)}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                    <span className="text-slate-300">✎</span>
-                  </button>
-                </li>
-              ))}
-              {timeline.length === 0 && (
-                <p className="py-6 text-center text-sm text-slate-400">
-                  Nothing logged this day.
-                </p>
-              )}
-            </ul>
+            <div className="mb-6">
+              <DayTimeline
+                day={day}
+                sessions={sessions}
+                feedings={feedings}
+                isToday={isTodayFn(parseISO(`${day}T00:00:00`))}
+                onSelectSession={setEditingSession}
+                onSelectFeeding={setEditingFeeding}
+              />
+            </div>
 
             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Note

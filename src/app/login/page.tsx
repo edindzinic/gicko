@@ -45,7 +45,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-linear-to-b from-sky-50 to-white px-4 dark:from-slate-900 dark:to-slate-950">
+    <div className="flex flex-1 items-center justify-center bg-linear-to-b from-indigo-50 to-white px-4 dark:from-slate-900 dark:to-slate-950">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-sm rounded-2xl border border-black/5 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-slate-900"
@@ -67,7 +67,7 @@ export default function LoginPage() {
           required
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-200 focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+          className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-3 text-base focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none dark:border-slate-700 dark:bg-slate-800"
         />
 
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -79,7 +79,7 @@ export default function LoginPage() {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mb-6 w-full rounded-lg border border-slate-300 px-3 py-3 text-base focus:border-sky-500 focus:ring-2 focus:ring-sky-200 focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+          className="mb-6 w-full rounded-lg border border-slate-300 px-3 py-3 text-base focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none dark:border-slate-700 dark:bg-slate-800"
         />
 
         {error && (
@@ -91,7 +91,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-sky-600 py-3 text-base font-medium text-white transition hover:bg-sky-700 disabled:opacity-50"
+          className="w-full rounded-lg bg-indigo-600 py-3 text-base font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
         >
           {loading ? "Signing in…" : "Sign in"}
         </button>

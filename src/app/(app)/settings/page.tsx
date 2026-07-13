@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { format, startOfMonth } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { formatDuration, isNightTime, sessionDurationMinutes } from "@/lib/time";
 
 function toInputValue(date: Date) {
   return format(date, "yyyy-MM-dd");
 }
 
-export default function ExportPage() {
+export default function SettingsPage() {
   const [from, setFrom] = useState(toInputValue(startOfMonth(new Date())));
   const [to, setTo] = useState(toInputValue(new Date()));
   const [exporting, setExporting] = useState(false);
@@ -87,9 +88,16 @@ export default function ExportPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-6 sm:py-10">
-      <h1 className="mb-6 text-2xl font-semibold">Export data</h1>
+      <h1 className="mb-6 text-2xl font-semibold">Settings</h1>
+
+      <div className="mb-6 rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-900">
+        <h2 className="mb-3 text-sm font-semibold text-slate-500">Appearance</h2>
+        <ThemeToggle />
+      </div>
 
       <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-900">
+        <h2 className="mb-3 text-sm font-semibold text-slate-500">Export data</h2>
+
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
           From
         </label>
@@ -115,15 +123,15 @@ export default function ExportPage() {
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="w-full rounded-lg bg-sky-600 py-3 text-base font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+          className="w-full rounded-lg bg-indigo-600 py-3 text-base font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
         >
           {exporting ? "Preparing…" : "📤 Export to Excel"}
         </button>
-      </div>
 
-      <p className="mt-4 text-center text-xs text-slate-400">
-        Downloads an .xlsx with separate Sleep and Feedings sheets for the selected range.
-      </p>
+        <p className="mt-4 text-center text-xs text-slate-400">
+          Downloads an .xlsx with separate Sleep and Feedings sheets for the selected range.
+        </p>
+      </div>
     </div>
   );
 }

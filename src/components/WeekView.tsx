@@ -106,7 +106,7 @@ export function WeekView({
               key={day.toISOString()}
               onClick={() => onSelectDay(format(day, "yyyy-MM-dd"))}
               className={`flex-1 rounded-lg py-2 text-center text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800 ${
-                isToday(day) ? "text-sky-600 dark:text-sky-400" : "text-slate-500"
+                isToday(day) ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500"
               }`}
             >
               <div>{format(day, "EEE")}</div>
@@ -159,7 +159,7 @@ export function WeekView({
                       className={`absolute inset-x-0.5 rounded-md px-1 text-left text-[10px] leading-tight text-white ${
                         session.is_night_sleep
                           ? "bg-indigo-700"
-                          : "bg-sky-400"
+                          : "bg-violet-400"
                       } ${ongoing ? "ring-2 ring-amber-300" : ""}`}
                       style={{ top, height }}
                     >
@@ -173,7 +173,7 @@ export function WeekView({
                     key={feeding.id}
                     onClick={() => onSelectFeeding(feeding)}
                     title={`${feeding.feed_type}${feeding.amount ? ` · ${feeding.amount}${feeding.unit}` : ""}`}
-                    className="absolute right-0.5 z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[9px] shadow ring-1 ring-slate-200 dark:ring-slate-700"
+                    className="absolute right-0.5 z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-teal-500 text-[9px] shadow ring-2 ring-white dark:ring-slate-900"
                     style={{ top: pct(minutesSinceMidnight(feeding.occurred_at)) }}
                   >
                     🍼
@@ -190,9 +190,11 @@ export function WeekView({
           <span className="h-3 w-3 rounded bg-indigo-700" /> Night sleep
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded bg-sky-400" /> Nap
+          <span className="h-3 w-3 rounded bg-violet-400" /> Nap
         </span>
-        <span className="flex items-center gap-1.5">🍼 Feeding</span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded-full bg-teal-500" /> Feeding
+        </span>
       </div>
     </div>
   );

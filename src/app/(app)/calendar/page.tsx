@@ -110,7 +110,7 @@ export default function CalendarPage() {
             <button
               onClick={() => setView("month")}
               className={`rounded-md px-3 py-1 ${
-                view === "month" ? "bg-sky-600 text-white" : "text-slate-600 dark:text-slate-300"
+                view === "month" ? "bg-indigo-600 text-white" : "text-slate-600 dark:text-slate-300"
               }`}
             >
               Month
@@ -118,7 +118,7 @@ export default function CalendarPage() {
             <button
               onClick={() => setView("week")}
               className={`rounded-md px-3 py-1 ${
-                view === "week" ? "bg-sky-600 text-white" : "text-slate-600 dark:text-slate-300"
+                view === "week" ? "bg-indigo-600 text-white" : "text-slate-600 dark:text-slate-300"
               }`}
             >
               Week
@@ -183,7 +183,7 @@ export default function CalendarPage() {
                     inMonth
                       ? "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
                       : "border-transparent bg-slate-50 text-slate-300 dark:bg-slate-950"
-                  } ${isToday(day) ? "ring-2 ring-sky-500" : ""}`}
+                  } ${isToday(day) ? "ring-2 ring-indigo-500" : ""}`}
                 >
                   <span className="text-xs font-medium">{format(day, "d")}</span>
                   {stat && (

@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 const links = [
   { href: "/", label: "Home", icon: "🏠" },
   { href: "/calendar", label: "Calendar", icon: "📅" },
-  { href: "/export", label: "Export", icon: "📤" },
+  { href: "/settings", label: "Settings", icon: "⚙️" },
 ];
 
 export function Nav({ displayName }: { displayName: string }) {
@@ -36,7 +36,7 @@ export function Nav({ displayName }: { displayName: string }) {
               href={link.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
                 pathname === link.href
-                  ? "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
+                  ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
                   : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
               }`}
             >
@@ -64,7 +64,7 @@ export function Nav({ displayName }: { displayName: string }) {
             href={link.href}
             className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs font-medium ${
               pathname === link.href
-                ? "text-sky-600 dark:text-sky-400"
+                ? "text-indigo-600 dark:text-indigo-400"
                 : "text-slate-500 dark:text-slate-400"
             }`}
           >

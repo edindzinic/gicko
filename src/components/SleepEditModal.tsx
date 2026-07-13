@@ -117,7 +117,7 @@ export function SleepEditModal({
             type="checkbox"
             checked={isNightSleep}
             onChange={(e) => setIsNightSleep(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300"
+            className="h-4 w-4 rounded border-slate-300 accent-indigo-600"
           />
           🌆 This was the night sleep (not a nap)
         </label>
@@ -144,7 +144,7 @@ export function SleepEditModal({
           <button
             onClick={handleSave}
             disabled={saving || deleting}
-            className="flex-1 rounded-lg bg-sky-600 py-3 text-base font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+            className="flex-1 rounded-lg bg-indigo-600 py-3 text-base font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save"}
           </button>

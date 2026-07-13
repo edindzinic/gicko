@@ -25,7 +25,9 @@ export default async function AppLayout({
   return (
     <div className="flex min-h-screen flex-1 flex-col sm:flex-row">
       <Nav displayName={profile?.display_name ?? "Account"} />
-      <main className="flex-1 overflow-y-auto pb-16 sm:pb-0">{children}</main>
+      <main className="flex-1 overflow-y-auto bg-slate-50 pb-16 sm:pb-0 dark:bg-slate-950">
+        {children}
+      </main>
     </div>
   );
 }

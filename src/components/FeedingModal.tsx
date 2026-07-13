@@ -17,15 +17,29 @@ const FEED_TYPES: { value: FeedType; label: string; icon: string }[] = [
 export function FeedingModal({
   feeding,
   defaultSleepSessionId,
+  defaultDate,
   onClose,
   onSaved,
 }: {
   feeding?: Tables<"feedings">;
   defaultSleepSessionId?: string | null;
+  defaultDate?: Date;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const isEditing = !!feeding;
+  const now = new Date();
+  const initialDateTime =
+    feeding?.occurred_at ??
+    (defaultDate
+      ? new Date(
+          defaultDate.getFullYear(),
+          defaultDate.getMonth(),
+          defaultDate.getDate(),
+          now.getHours(),
+          now.getMinutes(),
+        )
+      : now);
 
   const [feedType, setFeedType] = useState<FeedType>(
     (feeding?.feed_type as FeedType) ?? "bottle",
@@ -33,12 +47,8 @@ export function FeedingModal({
   const [amount, setAmount] = useState(feeding?.amount != null ? String(feeding.amount) : "");
   const [unit, setUnit] = useState<"ml" | "oz">((feeding?.unit as "ml" | "oz") ?? "ml");
   const [notes, setNotes] = useState(feeding?.notes ?? "");
-  const [occurredDate, setOccurredDate] = useState(() =>
-    toDateInputValue(feeding?.occurred_at ?? new Date()),
-  );
-  const [occurredTime, setOccurredTime] = useState(() =>
-    toTimeInputValue(feeding?.occurred_at ?? new Date()),
-  );
+  const [occurredDate, setOccurredDate] = useState(() => toDateInputValue(initialDateTime));
+  const [occurredTime, setOccurredTime] = useState(() => toTimeInputValue(initialDateTime));
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -102,7 +112,7 @@ export function FeedingModal({
               onClick={() => setFeedType(t.value)}
               className={`flex flex-col items-center gap-1 rounded-xl border py-3 text-xs font-medium transition ${
                 feedType === t.value
-                  ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
+                  ? "border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300"
                   : "border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300"
               }`}
             >
@@ -192,7 +202,7 @@ export function FeedingModal({
           <button
             onClick={handleSave}
             disabled={saving || deleting}
-            className="flex-1 rounded-lg bg-sky-600 py-3 text-base font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+            className="flex-1 rounded-lg bg-indigo-600 py-3 text-base font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save"}
           </button>
