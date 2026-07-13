@@ -35,6 +35,20 @@ export function toDatetimeLocalValue(iso: string | Date) {
   return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16);
 }
 
+export function toDateInputValue(iso: string | Date) {
+  const date = typeof iso === "string" ? parseISO(iso) : iso;
+  return format(date, "yyyy-MM-dd");
+}
+
+export function toTimeInputValue(iso: string | Date) {
+  const date = typeof iso === "string" ? parseISO(iso) : iso;
+  return format(date, "HH:mm");
+}
+
+export function combineDateAndTime(dateStr: string, timeStr: string) {
+  return new Date(`${dateStr}T${timeStr}`);
+}
+
 export function minutesSinceMidnight(iso: string) {
   const date = parseISO(iso);
   return differenceInMinutes(date, startOfDay(date));

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
-import { toDatetimeLocalValue } from "@/lib/time";
+import { combineDateAndTime, toDateInputValue, toTimeInputValue } from "@/lib/time";
 
 export function SleepEditModal({
   session,
@@ -14,9 +14,13 @@ export function SleepEditModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [startedAt, setStartedAt] = useState(() => toDatetimeLocalValue(session.started_at));
-  const [endedAt, setEndedAt] = useState(() =>
-    session.ended_at ? toDatetimeLocalValue(session.ended_at) : "",
+  const [startedDate, setStartedDate] = useState(() => toDateInputValue(session.started_at));
+  const [startedTime, setStartedTime] = useState(() => toTimeInputValue(session.started_at));
+  const [endedDate, setEndedDate] = useState(() =>
+    session.ended_at ? toDateInputValue(session.ended_at) : "",
+  );
+  const [endedTime, setEndedTime] = useState(() =>
+    session.ended_at ? toTimeInputValue(session.ended_at) : "",
   );
   const [notes, setNotes] = useState(session.notes ?? "");
   const [isNightSleep, setIsNightSleep] = useState(session.is_night_sleep);
@@ -33,8 +37,11 @@ export function SleepEditModal({
     const { error: saveError } = await supabase
       .from("sleep_sessions")
       .update({
-        started_at: new Date(startedAt).toISOString(),
-        ended_at: endedAt ? new Date(endedAt).toISOString() : null,
+        started_at: combineDateAndTime(startedDate, startedTime).toISOString(),
+        ended_at:
+          endedDate && endedTime
+            ? combineDateAndTime(endedDate, endedTime).toISOString()
+            : null,
         notes: notes || null,
         is_night_sleep: isNightSleep,
       })
@@ -71,24 +78,39 @@ export function SleepEditModal({
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
           Started at
         </label>
-        <input
-          type="datetime-local"
-          value={startedAt}
-          onChange={(e) => setStartedAt(e.target.value)}
-          className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
-        />
+        <div className="mb-4 flex gap-2">
+          <input
+            type="date"
+            value={startedDate}
+            onChange={(e) => setStartedDate(e.target.value)}
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+          />
+          <input
+            type="time"
+            value={startedTime}
+            onChange={(e) => setStartedTime(e.target.value)}
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+          />
+        </div>
 
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
           Ended at
         </label>
-        <input
-          type="datetime-local"
-          value={endedAt}
-          onChange={(e) => setEndedAt(e.target.value)}
-          placeholder="Still asleep"
-          className="mb-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
-        />
-        <p className="mb-4 text-xs text-slate-400">Leave blank if still asleep.</p>
+        <div className="mb-1 flex gap-2">
+          <input
+            type="date"
+            value={endedDate}
+            onChange={(e) => setEndedDate(e.target.value)}
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+          />
+          <input
+            type="time"
+            value={endedTime}
+            onChange={(e) => setEndedTime(e.target.value)}
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+          />
+        </div>
+        <p className="mb-4 text-xs text-slate-400">Leave both blank if still asleep.</p>
 
         <label className="mb-4 flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
           <input

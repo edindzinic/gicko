@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables, TablesInsert } from "@/lib/database.types";
-import { toDatetimeLocalValue } from "@/lib/time";
+import { combineDateAndTime, toDateInputValue, toTimeInputValue } from "@/lib/time";
 
 type FeedType = "breast" | "bottle" | "formula" | "solid";
 
@@ -33,8 +33,11 @@ export function FeedingModal({
   const [amount, setAmount] = useState(feeding?.amount != null ? String(feeding.amount) : "");
   const [unit, setUnit] = useState<"ml" | "oz">((feeding?.unit as "ml" | "oz") ?? "ml");
   const [notes, setNotes] = useState(feeding?.notes ?? "");
-  const [occurredAt, setOccurredAt] = useState(() =>
-    toDatetimeLocalValue(feeding?.occurred_at ?? new Date()),
+  const [occurredDate, setOccurredDate] = useState(() =>
+    toDateInputValue(feeding?.occurred_at ?? new Date()),
+  );
+  const [occurredTime, setOccurredTime] = useState(() =>
+    toTimeInputValue(feeding?.occurred_at ?? new Date()),
   );
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -50,7 +53,7 @@ export function FeedingModal({
     const supabase = createClient();
     const payload: TablesInsert<"feedings"> = {
       feed_type: feedType,
-      occurred_at: new Date(occurredAt).toISOString(),
+      occurred_at: combineDateAndTime(occurredDate, occurredTime).toISOString(),
       amount: needsAmount && amount ? Number(amount) : null,
       unit: needsAmount && amount ? unit : null,
       notes: notes || null,
@@ -109,15 +112,30 @@ export function FeedingModal({
           ))}
         </div>
 
-        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Time
-        </label>
-        <input
-          type="datetime-local"
-          value={occurredAt}
-          onChange={(e) => setOccurredAt(e.target.value)}
-          className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
-        />
+        <div className="mb-4 flex gap-2">
+          <div className="flex-1">
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Date
+            </label>
+            <input
+              type="date"
+              value={occurredDate}
+              onChange={(e) => setOccurredDate(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Time
+            </label>
+            <input
+              type="time"
+              value={occurredTime}
+              onChange={(e) => setOccurredTime(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base dark:border-slate-700 dark:bg-slate-800"
+            />
+          </div>
+        </div>
 
         {needsAmount && (
           <div className="mb-4 flex gap-2">
