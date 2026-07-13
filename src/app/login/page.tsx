@@ -45,18 +45,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-linear-to-b from-violet-100 via-rose-50 to-stone-50 px-4 dark:from-stone-900 dark:via-stone-900 dark:to-stone-950">
+    <div className="flex flex-1 items-center justify-center bg-neutral-50 px-4 dark:bg-black">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-3xl border border-stone-200/60 bg-white p-8 shadow-lg shadow-violet-200/40 dark:border-stone-800 dark:bg-stone-900 dark:shadow-none"
+        className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-8 shadow-xl shadow-neutral-200/50 dark:border-neutral-800 dark:bg-neutral-950 dark:shadow-2xl dark:shadow-black"
       >
-        <div className="mb-6 text-center">
-          <div className="mb-2 text-4xl">🍼</div>
-          <h1 className="text-xl font-semibold text-stone-800 dark:text-stone-100">Gicko</h1>
-          <p className="text-sm text-stone-500">Sign in to keep tracking</p>
+        <div className="mb-7 text-center">
+          <div className="mb-3 text-4xl">🍼</div>
+          <h1 className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+            Gicko
+          </h1>
+          <p className="text-sm text-neutral-500">Sign in to keep tracking</p>
         </div>
 
-        <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
+        <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
           Username
         </label>
         <input
@@ -67,10 +69,10 @@ export default function LoginPage() {
           required
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="mb-4 w-full rounded-2xl border border-stone-200 px-4 py-3 text-base focus:border-violet-400 focus:ring-4 focus:ring-violet-100 focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:focus:ring-violet-500/20"
+          className="mb-4 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 focus:border-accent focus:ring-4 focus:ring-accent/15 focus:outline-none dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50"
         />
 
-        <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
+        <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
           Password
         </label>
         <input
@@ -79,11 +81,11 @@ export default function LoginPage() {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mb-6 w-full rounded-2xl border border-stone-200 px-4 py-3 text-base focus:border-violet-400 focus:ring-4 focus:ring-violet-100 focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:focus:ring-violet-500/20"
+          className="mb-6 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 focus:border-accent focus:ring-4 focus:ring-accent/15 focus:outline-none dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-50"
         />
 
         {error && (
-          <p className="mb-4 rounded-2xl bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-950 dark:text-rose-400">
+          <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/50 dark:text-red-400">
             {error}
           </p>
         )}
@@ -91,12 +93,12 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-2xl bg-violet-500 py-3 text-base font-medium text-white transition hover:bg-violet-600 disabled:opacity-50"
+          className="w-full rounded-xl bg-accent py-3 text-base font-medium text-white transition hover:brightness-110 disabled:opacity-50"
         >
           {loading ? "Signing in…" : "Sign in"}
         </button>
 
-        <p className="mt-4 text-center text-xs text-stone-400">
+        <p className="mt-4 text-center text-xs text-neutral-400">
           You&apos;ll stay signed in on this device.
         </p>
       </form>

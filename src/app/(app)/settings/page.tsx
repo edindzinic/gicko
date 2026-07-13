@@ -123,54 +123,54 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-6 sm:py-10">
-      <h1 className="mb-6 text-2xl font-semibold text-stone-800 dark:text-stone-100">Settings</h1>
+      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">Settings</h1>
 
-      <div className="mb-6 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-500">
+      <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
           <User className="h-4 w-4" strokeWidth={2} /> Account
         </h2>
-        <p className="mb-4 text-sm text-stone-600 dark:text-stone-300">
+        <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-300">
           Signed in as <span className="font-medium">{displayName ?? "…"}</span>
         </p>
         <button
           onClick={signOut}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-stone-200 py-3 text-base font-medium text-stone-600 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 py-3 text-base font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-900"
         >
           <LogOut className="h-4 w-4" strokeWidth={2} />
           Sign out
         </button>
       </div>
 
-      <div className="mb-6 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-500">
+      <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
           <Palette className="h-4 w-4" strokeWidth={2} /> Appearance
         </h2>
         <ThemeToggle />
       </div>
 
-      <div className="rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-500">
+      <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
           <Download className="h-4 w-4" strokeWidth={2} /> Export data
         </h2>
 
-        <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
+        <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
           From
         </label>
         <input
           type="date"
           value={from}
           onChange={(e) => setFrom(e.target.value)}
-          className="mb-4 w-full rounded-2xl border border-stone-200 px-3 py-2.5 text-base dark:border-stone-700 dark:bg-stone-800"
+          className="mb-4 w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
         />
 
-        <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
+        <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
           To
         </label>
         <input
           type="date"
           value={to}
           onChange={(e) => setTo(e.target.value)}
-          className="mb-6 w-full rounded-2xl border border-stone-200 px-3 py-2.5 text-base dark:border-stone-700 dark:bg-stone-800"
+          className="mb-6 w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
         />
 
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
@@ -178,13 +178,13 @@ export default function SettingsPage() {
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-500 py-3 text-base font-medium text-white hover:bg-violet-600 disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-base font-medium text-white hover:brightness-110 disabled:opacity-50"
         >
           <Download className="h-4 w-4" strokeWidth={2} />
           {exporting ? "Preparing…" : "Export to Excel"}
         </button>
 
-        <p className="mt-4 text-center text-xs text-stone-400">
+        <p className="mt-4 text-center text-xs text-neutral-400">
           Downloads an .xlsx with separate Sleep and Feedings sheets for the selected range.
         </p>
       </div>

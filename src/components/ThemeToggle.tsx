@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync with class set by no-flash init script
@@ -18,19 +18,23 @@ export function ThemeToggle() {
   }
 
   return (
-    <div className="inline-flex rounded-2xl border border-stone-200 p-0.5 text-sm dark:border-stone-700">
+    <div className="inline-flex rounded-xl border border-neutral-200 p-0.5 text-sm dark:border-neutral-800">
       <button
         onClick={() => apply("light")}
-        className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 ${
-          theme === "light" ? "bg-violet-500 text-white" : "text-stone-600 dark:text-stone-300"
+        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 ${
+          theme === "light"
+            ? "bg-accent text-white"
+            : "text-neutral-500 dark:text-neutral-400"
         }`}
       >
         <Sun className="h-4 w-4" strokeWidth={2} /> Light
       </button>
       <button
         onClick={() => apply("dark")}
-        className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 ${
-          theme === "dark" ? "bg-violet-500 text-white" : "text-stone-600 dark:text-stone-300"
+        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 ${
+          theme === "dark"
+            ? "bg-accent text-white"
+            : "text-neutral-500 dark:text-neutral-400"
         }`}
       >
         <Moon className="h-4 w-4" strokeWidth={2} /> Dark

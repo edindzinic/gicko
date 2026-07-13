@@ -50,14 +50,14 @@ export function DayTimeline({
   return (
     <div
       ref={containerRef}
-      className="relative max-h-[420px] overflow-y-auto rounded-2xl border border-stone-200 dark:border-stone-800"
+      className="relative max-h-[420px] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-900"
     >
       <div className="flex">
-        <div className="relative w-14 shrink-0 bg-stone-50/50 dark:bg-stone-900/50" style={{ height: DAY_HEIGHT }}>
+        <div className="relative w-14 shrink-0 bg-neutral-50/50 dark:bg-neutral-950/50" style={{ height: DAY_HEIGHT }}>
           {Array.from({ length: 24 }, (_, hour) => (
             <div
               key={hour}
-              className="absolute right-2 -translate-y-1/2 text-[10px] text-stone-400"
+              className="absolute right-2 -translate-y-1/2 text-[10px] text-neutral-400"
               style={{ top: topForMinutes(hour * 60) }}
             >
               {formatHourLabel(hour)}
@@ -66,13 +66,13 @@ export function DayTimeline({
         </div>
 
         <div
-          className="relative flex-1 border-l border-stone-100 dark:border-stone-800"
+          className="relative flex-1 border-l border-neutral-100 dark:border-neutral-900"
           style={{ height: DAY_HEIGHT }}
         >
           {Array.from({ length: 24 }, (_, hour) => (
             <div
               key={hour}
-              className="absolute inset-x-0 border-t border-stone-100 dark:border-stone-800"
+              className="absolute inset-x-0 border-t border-neutral-100 dark:border-neutral-900"
               style={{ top: topForMinutes(hour * 60) }}
             />
           ))}
@@ -96,7 +96,7 @@ export function DayTimeline({
                 key={`${session.id}-${i}`}
                 onClick={() => onSelectSession(session)}
                 className={`absolute inset-x-2 rounded-lg px-2 py-1 text-left text-white shadow-sm transition hover:brightness-110 ${
-                  session.is_night_sleep ? "bg-indigo-700" : "bg-violet-400"
+                  session.is_night_sleep ? "bg-slate-700" : "bg-slate-400"
                 } ${ongoing ? "ring-2 ring-amber-300" : ""}`}
                 style={{ top, height }}
               >
@@ -116,7 +116,7 @@ export function DayTimeline({
             <button
               key={feeding.id}
               onClick={() => onSelectFeeding(feeding)}
-              className="absolute right-1 z-10 flex -translate-y-1/2 items-center gap-1 rounded-full bg-rose-400 px-2 py-1 text-[10px] font-medium text-white shadow ring-2 ring-white dark:ring-stone-900"
+              className="absolute right-1 z-10 flex -translate-y-1/2 items-center gap-1 rounded-full bg-accent px-2 py-1 text-[10px] font-medium text-white shadow ring-2 ring-white dark:ring-neutral-950"
               style={{ top: topForMinutes(minutesSinceMidnight(feeding.occurred_at)) }}
             >
               🍼{feeding.amount ? ` ${feeding.amount}${feeding.unit}` : ""}
@@ -124,7 +124,7 @@ export function DayTimeline({
           ))}
 
           {isEmpty && (
-            <p className="absolute inset-x-0 top-24 text-center text-sm text-stone-400">
+            <p className="absolute inset-x-0 top-24 text-center text-sm text-neutral-400">
               Nothing logged {isToday ? "yet today" : "this day"}.
             </p>
           )}

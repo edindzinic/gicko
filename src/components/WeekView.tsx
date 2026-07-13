@@ -99,8 +99,8 @@ export function WeekView({
             <button
               key={day.toISOString()}
               onClick={() => onSelectDay(format(day, "yyyy-MM-dd"))}
-              className={`flex-1 rounded-xl py-2 text-center text-xs font-medium hover:bg-stone-100 dark:hover:bg-stone-800 ${
-                isToday(day) ? "text-violet-600 dark:text-violet-400" : "text-stone-400"
+              className={`flex-1 rounded-xl py-2 text-center text-xs font-medium hover:bg-neutral-100 dark:hover:bg-neutral-900 ${
+                isToday(day) ? "text-accent" : "text-neutral-400"
               }`}
             >
               <div>{format(day, "EEE")}</div>
@@ -114,7 +114,7 @@ export function WeekView({
             {HOUR_LABELS.map((hour) => (
               <div
                 key={hour}
-                className="absolute right-2 -translate-y-1/2 text-[10px] text-stone-400"
+                className="absolute right-2 -translate-y-1/2 text-[10px] text-neutral-400"
                 style={{ top: pct(hour * 60) }}
               >
                 {formatHourLabel(hour)}
@@ -130,13 +130,13 @@ export function WeekView({
             return (
               <div
                 key={key}
-                className="relative flex-1 border-l border-stone-100 dark:border-stone-800"
+                className="relative flex-1 border-l border-neutral-100 dark:border-neutral-900"
                 style={{ height: DAY_HEIGHT }}
               >
                 {HOUR_LABELS.map((hour) => (
                   <div
                     key={hour}
-                    className="absolute inset-x-0 border-t border-stone-100 dark:border-stone-800"
+                    className="absolute inset-x-0 border-t border-neutral-100 dark:border-neutral-900"
                     style={{ top: pct(hour * 60) }}
                   />
                 ))}
@@ -152,8 +152,8 @@ export function WeekView({
                       title={session.is_night_sleep ? "Night sleep" : "Nap"}
                       className={`absolute inset-x-0.5 rounded-lg px-1 text-left text-[10px] leading-tight text-white ${
                         session.is_night_sleep
-                          ? "bg-indigo-700"
-                          : "bg-violet-400"
+                          ? "bg-slate-700"
+                          : "bg-slate-400"
                       } ${ongoing ? "ring-2 ring-amber-300" : ""}`}
                       style={{ top, height }}
                     >
@@ -167,7 +167,7 @@ export function WeekView({
                     key={feeding.id}
                     onClick={() => onSelectFeeding(feeding)}
                     title={`${feeding.feed_type}${feeding.amount ? ` · ${feeding.amount}${feeding.unit}` : ""}`}
-                    className="absolute right-0.5 z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-rose-400 text-[9px] shadow ring-2 ring-white dark:ring-stone-900"
+                    className="absolute right-0.5 z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-[9px] shadow ring-2 ring-white dark:ring-neutral-950"
                     style={{ top: pct(minutesSinceMidnight(feeding.occurred_at)) }}
                   >
                     🍼
@@ -179,15 +179,15 @@ export function WeekView({
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-4 text-xs text-stone-400">
+      <div className="mt-3 flex items-center gap-4 text-xs text-neutral-400">
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded bg-indigo-700" /> Night sleep
+          <span className="h-3 w-3 rounded bg-slate-700" /> Night sleep
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded bg-violet-400" /> Nap
+          <span className="h-3 w-3 rounded bg-slate-400" /> Nap
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-rose-400" /> Feeding
+          <span className="h-3 w-3 rounded-full bg-accent" /> Feeding
         </span>
       </div>
     </div>

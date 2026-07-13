@@ -6,8 +6,7 @@ const THEME_INIT_SCRIPT = `
 (function () {
   try {
     var stored = localStorage.getItem("gicko-theme");
-    var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    if (stored === "dark" || (!stored && prefersDark)) {
+    if (stored !== "light") {
       document.documentElement.classList.add("dark");
     }
   } catch (e) {}
