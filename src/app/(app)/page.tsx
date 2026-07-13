@@ -136,7 +136,7 @@ export default function HomePage() {
         >
           {openSession
             ? openSession.is_night_sleep
-              ? "🌅 Morning awakening"
+              ? "🌙 Night awakening"
               : "😴 Woke up"
             : "🌙 Put down to sleep"}
         </button>
@@ -147,6 +147,15 @@ export default function HomePage() {
             className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
           >
             🌆 Start night sleep
+          </button>
+        )}
+
+        {openSession?.is_night_sleep && (
+          <button
+            onClick={endSleep}
+            className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
+          >
+            🌅 Morning awakening
           </button>
         )}
       </div>
