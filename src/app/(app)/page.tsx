@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { addDays, differenceInMinutes, endOfDay, format, isToday, startOfDay, subDays } from "date-fns";
+import { addDays, endOfDay, format, isToday, startOfDay, subDays } from "date-fns";
 import { ChevronLeft, ChevronRight, Milk, Moon, PencilLine, Sun, Timer } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
@@ -9,11 +9,11 @@ import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
 import { DayTimeline } from "@/components/DayTimeline";
 import {
+  computeDayStats,
   findNightWakeUpEndTimes,
   formatDuration,
   formatTime,
   isNightTime,
-  splitIntervalByDay,
 } from "@/lib/time";
 
 type SleepSession = Tables<"sleep_sessions">;
@@ -37,7 +37,6 @@ export default function HomePage() {
     null,
   );
   const [creatingFeeding, setCreatingFeeding] = useState<{ at: Date } | null>(null);
-  const [elapsedMinutes, setElapsedMinutes] = useState(0);
 
   const viewingToday = isToday(selectedDate);
   const dayKey = format(selectedDate, "yyyy-MM-dd");
@@ -76,11 +75,6 @@ export default function HomePage() {
     setDaySessions(sessions ?? []);
     setDayFeedings(feedings ?? []);
     setNightSessions(nights ?? []);
-    setElapsedMinutes(
-      isToday(selectedDate)
-        ? Math.max(0, differenceInMinutes(new Date(), startOfDay(selectedDate)))
-        : 1440,
-    );
     setLoading(false);
   }, [selectedDate]);
 
@@ -117,16 +111,12 @@ export default function HomePage() {
     setNightAwakeningPending(true);
   }
 
-  const daySegments = daySessions.flatMap((session) =>
-    splitIntervalByDay(session.started_at, session.ended_at)
-      .filter((seg) => seg.day === dayKey)
-      .map((seg) => ({ session, ...seg })),
+  const { nightSleepMinutes, dayAwakeMinutes } = computeDayStats(
+    dayKey,
+    nightSessions,
+    daySessions,
+    viewingToday ? new Date() : endOfDay(selectedDate),
   );
-  const totalSleepMinutes = daySegments.reduce(
-    (sum, seg) => sum + (seg.endMinutes - seg.startMinutes),
-    0,
-  );
-  const totalAwakeMinutes = Math.max(0, elapsedMinutes - totalSleepMinutes);
   const nightWakeUps = findNightWakeUpEndTimes(nightSessions).filter(
     (t) => format(new Date(t), "yyyy-MM-dd") === dayKey,
   ).length;
@@ -254,14 +244,14 @@ export default function HomePage() {
         <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
           <Moon className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-            {formatDuration(totalSleepMinutes)}
+            {formatDuration(nightSleepMinutes)}
           </p>
-          <p className="text-xs text-neutral-500">Asleep</p>
+          <p className="text-xs text-neutral-500">Night sleep</p>
         </div>
         <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
           <Sun className="mx-auto mb-1 h-4 w-4 text-accent" strokeWidth={1.75} />
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-            {formatDuration(totalAwakeMinutes)}
+            {formatDuration(dayAwakeMinutes)}
           </p>
           <p className="text-xs text-neutral-500">Awake</p>
         </div>
