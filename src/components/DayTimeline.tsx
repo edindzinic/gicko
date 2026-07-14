@@ -12,6 +12,8 @@ const HOUR_HEIGHT = 56; // px per hour
 const DAY_HEIGHT = HOUR_HEIGHT * 24;
 const DRAG_THRESHOLD_PX = 6;
 const SNAP_MINUTES = 5;
+const FEEDING_MIN_GAP_PX = 24; // min vertical gap before two feeding pills would overlap
+const FEEDING_COLUMN_WIDTH_PX = 92;
 
 function topForMinutes(minutes: number) {
   return (minutes / 60) * HOUR_HEIGHT;
@@ -110,6 +112,17 @@ export function DayTimeline({
 
   const isEmpty = segments.length === 0 && feedings.length === 0;
 
+  const feedingColumnBottoms: number[] = [];
+  const feedingLayout = [...feedings]
+    .sort((a, b) => minutesSinceMidnight(a.occurred_at) - minutesSinceMidnight(b.occurred_at))
+    .map((feeding) => {
+      const top = topForMinutes(minutesSinceMidnight(feeding.occurred_at));
+      let column = feedingColumnBottoms.findIndex((bottom) => top >= bottom);
+      if (column === -1) column = feedingColumnBottoms.length;
+      feedingColumnBottoms[column] = top + FEEDING_MIN_GAP_PX;
+      return { feeding, top, column };
+    });
+
   return (
     <div
       ref={containerRef}
@@ -179,12 +192,12 @@ export function DayTimeline({
             );
           })}
 
-          {feedings.map((feeding) => (
+          {feedingLayout.map(({ feeding, top, column }) => (
             <button
               key={feeding.id}
               onClick={() => onSelectFeeding(feeding)}
-              className="absolute right-1 z-10 flex -translate-y-1/2 items-center gap-1 rounded-full bg-accent px-2 py-1 text-[10px] font-medium text-white shadow ring-2 ring-white dark:ring-neutral-950"
-              style={{ top: topForMinutes(minutesSinceMidnight(feeding.occurred_at)) }}
+              className="absolute z-10 flex -translate-y-1/2 items-center gap-1 rounded-full bg-accent px-2 py-1 text-[10px] font-medium text-white shadow ring-2 ring-white dark:ring-neutral-950"
+              style={{ top, right: 4 + column * FEEDING_COLUMN_WIDTH_PX }}
             >
               🍼{feeding.amount ? ` ${feeding.amount}${feeding.unit}` : ""}
             </button>

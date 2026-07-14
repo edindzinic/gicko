@@ -11,6 +11,8 @@ const DAY_HEIGHT = HOUR_HEIGHT * 24;
 const HOUR_LABELS = [0, 3, 6, 9, 12, 15, 18, 21];
 const DRAG_THRESHOLD_PX = 6;
 const SNAP_MINUTES = 5;
+const FEEDING_MIN_GAP_PX = 16; // min vertical gap before two feeding badges would overlap
+const FEEDING_COLUMN_WIDTH_PX = 18;
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
@@ -196,6 +198,18 @@ export function WeekView({
             const key = format(day, "yyyy-MM-dd");
             const segments = segmentsByDay.get(key) ?? [];
             const dayFeedings = feedingsByDay.get(key) ?? [];
+            const feedingColumnBottoms: number[] = [];
+            const feedingLayout = [...dayFeedings]
+              .sort(
+                (a, b) => minutesSinceMidnight(a.occurred_at) - minutesSinceMidnight(b.occurred_at),
+              )
+              .map((feeding) => {
+                const top = pct(minutesSinceMidnight(feeding.occurred_at));
+                let column = feedingColumnBottoms.findIndex((bottom) => top >= bottom);
+                if (column === -1) column = feedingColumnBottoms.length;
+                feedingColumnBottoms[column] = top + FEEDING_MIN_GAP_PX;
+                return { feeding, top, column };
+              });
 
             return (
               <div
@@ -238,13 +252,13 @@ export function WeekView({
                   );
                 })}
 
-                {dayFeedings.map((feeding) => (
+                {feedingLayout.map(({ feeding, top, column }) => (
                   <button
                     key={feeding.id}
                     onClick={() => onSelectFeeding(feeding)}
                     title={`${feeding.feed_type}${feeding.amount ? ` · ${feeding.amount}${feeding.unit}` : ""}`}
-                    className="absolute right-0.5 z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-[9px] shadow ring-2 ring-white dark:ring-neutral-950"
-                    style={{ top: pct(minutesSinceMidnight(feeding.occurred_at)) }}
+                    className="absolute z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-[9px] shadow ring-2 ring-white dark:ring-neutral-950"
+                    style={{ top, right: 2 + column * FEEDING_COLUMN_WIDTH_PX }}
                   >
                     🍼
                   </button>
