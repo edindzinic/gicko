@@ -161,7 +161,7 @@ export default function HomePage() {
 
       {viewingToday && (
         <div
-          className={`mb-4 rounded-2xl bg-linear-to-br p-6 text-white shadow-xl transition-colors ${
+          className={`mb-4 rounded-2xl bg-linear-to-br p-6 text-center text-white shadow-xl transition-colors ${
             openSession
               ? "from-neutral-700 to-neutral-950 shadow-neutral-300 dark:shadow-black/40"
               : "from-accent-soft to-accent shadow-amber-200/60 dark:shadow-black/40"
@@ -179,7 +179,7 @@ export default function HomePage() {
               <>
                 <button
                   onClick={() => setEditingSession(statusSession)}
-                  className="mb-1 flex items-center gap-2 text-3xl font-semibold tracking-tight"
+                  className="mb-1 flex w-full items-center justify-center gap-2 text-4xl font-semibold tracking-tight"
                 >
                   {formatTime(statusTime)}
                   <PencilLine className="h-4 w-4 opacity-70" strokeWidth={1.75} />
@@ -190,7 +190,7 @@ export default function HomePage() {
                 </p>
               </>
             ) : (
-              <p className="mb-4 text-3xl font-semibold">—</p>
+              <p className="mb-4 text-4xl font-semibold">—</p>
             );
           })()}
 
@@ -198,14 +198,14 @@ export default function HomePage() {
             openSession.is_night_sleep ? (
               <button
                 onClick={handleNightAwakening}
-                className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
+                className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
               >
                 🌙 Night awakening
               </button>
             ) : (
               <button
                 onClick={endSleep}
-                className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
+                className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
               >
                 😴 Woke up
               </button>
@@ -217,13 +217,13 @@ export default function HomePage() {
                   startSleep(true);
                   setNightAwakeningPending(false);
                 }}
-                className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-amber-800 shadow-sm active:scale-[0.98]"
+                className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-amber-800 shadow-sm active:scale-[0.98]"
               >
                 🌙 Put back to sleep
               </button>
               <button
                 onClick={() => setNightAwakeningPending(false)}
-                className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
+                className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
               >
                 ☀️ Woke up (done for the night)
               </button>
@@ -232,13 +232,13 @@ export default function HomePage() {
             <>
               <button
                 onClick={() => startSleep(false)}
-                className="w-full rounded-xl bg-white/95 py-4 text-lg font-semibold text-amber-800 shadow-sm active:scale-[0.98]"
+                className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-amber-800 shadow-sm active:scale-[0.98]"
               >
                 🌙 Put down to sleep
               </button>
               <button
                 onClick={() => startSleep(true)}
-                className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-3 text-sm font-semibold text-white active:scale-[0.98]"
+                className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
               >
                 🌆 Start night sleep
               </button>
