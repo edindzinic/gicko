@@ -27,9 +27,9 @@ import { findNightWakeUpEndTimes, formatDuration, sessionDurationMinutes } from 
 type DayStats = { sleepMinutes: number; feedingCount: number; nightWakeUps: number };
 
 export default function CalendarPage() {
-  const [view, setView] = useState<"month" | "week">("month");
+  const [view, setView] = useState<"month" | "week">("week");
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [sessions, setSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [feedings, setFeedings] = useState<Tables<"feedings">[]>([]);
   const [nightSessions, setNightSessions] = useState<Tables<"sleep_sessions">[]>([]);
@@ -43,8 +43,8 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [weekRefreshKey, setWeekRefreshKey] = useState(0);
 
-  const gridStart = startOfWeek(startOfMonth(month));
-  const gridEnd = endOfWeek(endOfMonth(month));
+  const gridStart = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
+  const gridEnd = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
 
   const load = useCallback(async () => {
@@ -156,7 +156,7 @@ export default function CalendarPage() {
               onClick={() =>
                 view === "month"
                   ? setMonth(startOfMonth(new Date()))
-                  : setWeekStart(startOfWeek(new Date()))
+                  : setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))
               }
               className="rounded-2xl border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
             >
@@ -180,7 +180,7 @@ export default function CalendarPage() {
       {view === "month" ? (
         <>
           <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-neutral-400 sm:gap-2">
-            {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+            {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
               <div key={i} className="py-1">
                 {d}
               </div>
