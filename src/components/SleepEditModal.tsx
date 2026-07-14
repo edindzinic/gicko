@@ -3,16 +3,21 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables, TablesInsert } from "@/lib/database.types";
-import { combineDateAndTime, toDateInputValue, toTimeInputValue } from "@/lib/time";
+import { combineDateAndTime, isNightTime, toDateInputValue, toTimeInputValue } from "@/lib/time";
 
 export function SleepEditModal({
   session,
   defaultDate,
+  defaultStart,
+  defaultEnd,
   onClose,
   onSaved,
 }: {
   session?: Tables<"sleep_sessions">;
   defaultDate?: Date;
+  /** Exact prefill start time (e.g. from tapping/dragging on the week grid), overrides defaultDate. */
+  defaultStart?: Date;
+  defaultEnd?: Date;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -20,6 +25,7 @@ export function SleepEditModal({
   const now = new Date();
   const initialStart =
     session?.started_at ??
+    defaultStart ??
     (defaultDate
       ? new Date(
           defaultDate.getFullYear(),
@@ -29,17 +35,17 @@ export function SleepEditModal({
           now.getMinutes(),
         )
       : now);
+  const initialEnd = session?.ended_at ?? defaultEnd ?? null;
 
   const [startedDate, setStartedDate] = useState(() => toDateInputValue(initialStart));
   const [startedTime, setStartedTime] = useState(() => toTimeInputValue(initialStart));
-  const [endedDate, setEndedDate] = useState(() =>
-    session?.ended_at ? toDateInputValue(session.ended_at) : "",
-  );
-  const [endedTime, setEndedTime] = useState(() =>
-    session?.ended_at ? toTimeInputValue(session.ended_at) : "",
-  );
+  const [endedDate, setEndedDate] = useState(() => (initialEnd ? toDateInputValue(initialEnd) : ""));
+  const [endedTime, setEndedTime] = useState(() => (initialEnd ? toTimeInputValue(initialEnd) : ""));
   const [notes, setNotes] = useState(session?.notes ?? "");
-  const [isNightSleep, setIsNightSleep] = useState(session?.is_night_sleep ?? false);
+  const [isNightSleep, setIsNightSleep] = useState(
+    session?.is_night_sleep ??
+      isNightTime(typeof initialStart === "string" ? initialStart : initialStart.toISOString()),
+  );
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);

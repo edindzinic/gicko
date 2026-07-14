@@ -36,6 +36,10 @@ export default function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [editingSession, setEditingSession] = useState<Tables<"sleep_sessions"> | null>(null);
   const [editingFeeding, setEditingFeeding] = useState<Tables<"feedings"> | null>(null);
+  const [creatingSleep, setCreatingSleep] = useState<{ start: Date; end: Date | null } | null>(
+    null,
+  );
+  const [creatingFeeding, setCreatingFeeding] = useState<{ at: Date } | null>(null);
   const [loading, setLoading] = useState(true);
   const [weekRefreshKey, setWeekRefreshKey] = useState(0);
 
@@ -103,6 +107,8 @@ export default function CalendarPage() {
   function refreshAfterEdit() {
     setEditingSession(null);
     setEditingFeeding(null);
+    setCreatingSleep(null);
+    setCreatingFeeding(null);
     load();
     setWeekRefreshKey((k) => k + 1);
   }
@@ -217,6 +223,8 @@ export default function CalendarPage() {
           onSelectDay={setSelectedDay}
           onSelectSession={setEditingSession}
           onSelectFeeding={setEditingFeeding}
+          onCreateSleep={(_day, start, end) => setCreatingSleep({ start, end })}
+          onCreateFeeding={(_day, at) => setCreatingFeeding({ at })}
         />
       )}
 
@@ -243,6 +251,23 @@ export default function CalendarPage() {
         <FeedingModal
           feeding={editingFeeding}
           onClose={() => setEditingFeeding(null)}
+          onSaved={refreshAfterEdit}
+        />
+      )}
+
+      {creatingSleep && (
+        <SleepEditModal
+          defaultStart={creatingSleep.start}
+          defaultEnd={creatingSleep.end ?? undefined}
+          onClose={() => setCreatingSleep(null)}
+          onSaved={refreshAfterEdit}
+        />
+      )}
+
+      {creatingFeeding && (
+        <FeedingModal
+          defaultDateTime={creatingFeeding.at}
+          onClose={() => setCreatingFeeding(null)}
           onSaved={refreshAfterEdit}
         />
       )}

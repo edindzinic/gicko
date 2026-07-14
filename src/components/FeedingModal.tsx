@@ -18,12 +18,15 @@ export function FeedingModal({
   feeding,
   defaultSleepSessionId,
   defaultDate,
+  defaultDateTime,
   onClose,
   onSaved,
 }: {
   feeding?: Tables<"feedings">;
   defaultSleepSessionId?: string | null;
   defaultDate?: Date;
+  /** Exact prefill time (e.g. from tapping on the week grid), overrides defaultDate. */
+  defaultDateTime?: Date;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -31,6 +34,7 @@ export function FeedingModal({
   const now = new Date();
   const initialDateTime =
     feeding?.occurred_at ??
+    defaultDateTime ??
     (defaultDate
       ? new Date(
           defaultDate.getFullYear(),

@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { addDays, eachDayOfInterval, format, isToday } from "date-fns";
+import { useCallback, useEffect, useState, type PointerEvent } from "react";
+import { addDays, addMinutes, eachDayOfInterval, format, isToday, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
-import { formatHourLabel, minutesSinceMidnight, splitIntervalByDay } from "@/lib/time";
+import { formatDuration, formatHourLabel, minutesSinceMidnight, splitIntervalByDay } from "@/lib/time";
 
 const HOUR_HEIGHT = 32; // px per hour
 const DAY_HEIGHT = HOUR_HEIGHT * 24;
 const HOUR_LABELS = [0, 3, 6, 9, 12, 15, 18, 21];
+const DRAG_THRESHOLD_PX = 6;
+const SNAP_MINUTES = 5;
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
@@ -17,20 +19,53 @@ function pct(minutes: number) {
   return (minutes / 1440) * DAY_HEIGHT;
 }
 
+function clampMinutes(minutes: number) {
+  return Math.min(1439, Math.max(0, minutes));
+}
+
+function snapMinutes(minutes: number) {
+  return Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES;
+}
+
+function minuteLabel(totalMinutes: number) {
+  const h = Math.floor(totalMinutes / 60) % 24;
+  const m = totalMinutes % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function minutesToDate(day: string, minutes: number) {
+  return addMinutes(parseISO(`${day}T00:00:00`), minutes);
+}
+
+type DragState = {
+  day: string;
+  pointerId: number;
+  rectTop: number;
+  originMinutes: number;
+  currentMinutes: number;
+  moved: boolean;
+};
+
 export function WeekView({
   weekStart,
   onSelectSession,
   onSelectFeeding,
   onSelectDay,
+  onCreateSleep,
+  onCreateFeeding,
 }: {
   weekStart: Date;
   onSelectSession: (session: SleepSession) => void;
   onSelectFeeding: (feeding: Feeding) => void;
   onSelectDay: (day: string) => void;
+  onCreateSleep: (day: string, start: Date, end: Date | null) => void;
+  onCreateFeeding: (day: string, at: Date) => void;
 }) {
   const [sessions, setSessions] = useState<SleepSession[]>([]);
   const [feedings, setFeedings] = useState<Feeding[]>([]);
   const [loading, setLoading] = useState(true);
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const [tapPrompt, setTapPrompt] = useState<{ day: string; minutes: number } | null>(null);
 
   const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
 
@@ -65,6 +100,41 @@ export function WeekView({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- refetch when week changes
     load();
   }, [load]);
+
+  function handlePointerDown(e: PointerEvent<HTMLDivElement>, day: string) {
+    if ((e.target as HTMLElement).closest("button")) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const minutes = clampMinutes(((e.clientY - rect.top) / DAY_HEIGHT) * 1440);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setTapPrompt(null);
+    setDrag({
+      day,
+      pointerId: e.pointerId,
+      rectTop: rect.top,
+      originMinutes: minutes,
+      currentMinutes: minutes,
+      moved: false,
+    });
+  }
+
+  function handlePointerMove(e: PointerEvent<HTMLDivElement>) {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const minutes = clampMinutes(((e.clientY - drag.rectTop) / DAY_HEIGHT) * 1440);
+    const movedPx = Math.abs(e.clientY - (drag.rectTop + pct(drag.originMinutes)));
+    setDrag({ ...drag, currentMinutes: minutes, moved: drag.moved || movedPx > DRAG_THRESHOLD_PX });
+  }
+
+  function handlePointerUp(e: PointerEvent<HTMLDivElement>) {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    if (drag.moved) {
+      const start = snapMinutes(Math.min(drag.originMinutes, drag.currentMinutes));
+      const end = Math.max(snapMinutes(Math.max(drag.originMinutes, drag.currentMinutes)), start + SNAP_MINUTES);
+      onCreateSleep(drag.day, minutesToDate(drag.day, start), minutesToDate(drag.day, end));
+    } else {
+      setTapPrompt({ day: drag.day, minutes: snapMinutes(drag.originMinutes) });
+    }
+    setDrag(null);
+  }
 
   const weekDayKeys = new Set(days.map((d) => format(d, "yyyy-MM-dd")));
 
@@ -130,8 +200,12 @@ export function WeekView({
             return (
               <div
                 key={key}
-                className="relative flex-1 border-l border-neutral-100 dark:border-neutral-900"
+                className="relative flex-1 touch-none border-l border-neutral-100 dark:border-neutral-900"
                 style={{ height: DAY_HEIGHT }}
+                onPointerDown={(e) => handlePointerDown(e, key)}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={() => setDrag(null)}
               >
                 {HOUR_LABELS.map((hour) => (
                   <div
@@ -144,20 +218,22 @@ export function WeekView({
                 {segments.map(({ session, startMinutes, endMinutes }, i) => {
                   const ongoing = !session.ended_at;
                   const top = pct(startMinutes);
-                  const height = Math.max(pct(endMinutes - startMinutes), 6);
+                  const duration = endMinutes - startMinutes;
+                  const height = Math.max(pct(duration), 6);
                   return (
                     <button
                       key={`${session.id}-${i}`}
                       onClick={() => onSelectSession(session)}
-                      title={session.is_night_sleep ? "Night sleep" : "Nap"}
-                      className={`absolute inset-x-0.5 rounded-lg px-1 text-left text-[10px] leading-tight text-white ${
+                      title={`${session.is_night_sleep ? "Night sleep" : "Nap"} · ${formatDuration(duration)}`}
+                      className={`absolute inset-x-0.5 overflow-hidden rounded-lg px-1 text-left text-[10px] leading-tight whitespace-nowrap text-white ${
                         session.is_night_sleep
                           ? "bg-slate-700"
                           : "bg-slate-400"
                       } ${ongoing ? "ring-2 ring-amber-300" : ""}`}
                       style={{ top, height }}
                     >
-                      {height > 16 && (session.is_night_sleep ? "🌆" : "🌙")}
+                      {height > 16 &&
+                        `${session.is_night_sleep ? "🌆" : "🌙"} ${formatDuration(duration)}`}
                     </button>
                   );
                 })}
@@ -173,6 +249,61 @@ export function WeekView({
                     🍼
                   </button>
                 ))}
+
+                {drag && drag.day === key && drag.moved && (
+                  <div
+                    className="pointer-events-none absolute inset-x-0.5 z-20 rounded-lg bg-accent/40 px-1 text-[10px] leading-tight whitespace-nowrap text-white ring-2 ring-accent"
+                    style={{
+                      top: pct(Math.min(drag.originMinutes, drag.currentMinutes)),
+                      height: Math.max(pct(Math.abs(drag.currentMinutes - drag.originMinutes)), 6),
+                    }}
+                  >
+                    {minuteLabel(snapMinutes(Math.min(drag.originMinutes, drag.currentMinutes)))}–
+                    {minuteLabel(snapMinutes(Math.max(drag.originMinutes, drag.currentMinutes)))}
+                  </div>
+                )}
+
+                {tapPrompt && tapPrompt.day === key && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-30"
+                      onPointerDown={() => setTapPrompt(null)}
+                    />
+                    <div
+                      className="absolute inset-x-0.5 z-40 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
+                      style={{ top: pct(tapPrompt.minutes) }}
+                    >
+                      <p className="mb-1 px-0.5 text-[9px] text-neutral-400">
+                        {minuteLabel(tapPrompt.minutes)}
+                      </p>
+                      <button
+                        onClick={() => {
+                          onCreateSleep(
+                            tapPrompt.day,
+                            minutesToDate(tapPrompt.day, tapPrompt.minutes),
+                            null,
+                          );
+                          setTapPrompt(null);
+                        }}
+                        className="mb-1 block w-full rounded-lg bg-slate-700 px-1.5 py-1 text-left text-[10px] font-medium whitespace-nowrap text-white"
+                      >
+                        😴 Log sleep
+                      </button>
+                      <button
+                        onClick={() => {
+                          onCreateFeeding(
+                            tapPrompt.day,
+                            minutesToDate(tapPrompt.day, tapPrompt.minutes),
+                          );
+                          setTapPrompt(null);
+                        }}
+                        className="block w-full rounded-lg bg-accent px-1.5 py-1 text-left text-[10px] font-medium whitespace-nowrap text-white"
+                      >
+                        🍼 Log feeding
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             );
           })}
