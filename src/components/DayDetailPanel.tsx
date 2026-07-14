@@ -12,9 +12,11 @@ import { DayTimeline } from "@/components/DayTimeline";
 export function DayDetailPanel({
   day,
   onClose,
+  onEventsChanged,
 }: {
   day: string; // yyyy-MM-dd
   onClose: () => void;
+  onEventsChanged?: () => void;
 }) {
   const [sessions, setSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [feedings, setFeedings] = useState<Tables<"feedings">[]>([]);
@@ -24,6 +26,8 @@ export function DayDetailPanel({
   const [loading, setLoading] = useState(true);
   const [editingSession, setEditingSession] = useState<Tables<"sleep_sessions"> | null>(null);
   const [editingFeeding, setEditingFeeding] = useState<Tables<"feedings"> | null>(null);
+  const [addingSleep, setAddingSleep] = useState(false);
+  const [addingFeeding, setAddingFeeding] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -104,6 +108,21 @@ export function DayDetailPanel({
           <p className="py-8 text-center text-sm text-neutral-400">Loading…</p>
         ) : (
           <>
+            <div className="mb-4 flex gap-2">
+              <button
+                onClick={() => setAddingSleep(true)}
+                className="flex-1 rounded-xl border-2 border-accent py-2.5 text-sm font-semibold text-accent active:scale-[0.98]"
+              >
+                😴 Log sleep
+              </button>
+              <button
+                onClick={() => setAddingFeeding(true)}
+                className="flex-1 rounded-xl border-2 border-accent py-2.5 text-sm font-semibold text-accent active:scale-[0.98]"
+              >
+                🍼 Log feeding
+              </button>
+            </div>
+
             <div className="mb-6">
               <DayTimeline
                 day={day}
@@ -138,6 +157,7 @@ export function DayDetailPanel({
           onSaved={() => {
             setEditingSession(null);
             load();
+            onEventsChanged?.();
           }}
         />
       )}
@@ -149,6 +169,31 @@ export function DayDetailPanel({
           onSaved={() => {
             setEditingFeeding(null);
             load();
+            onEventsChanged?.();
+          }}
+        />
+      )}
+
+      {addingSleep && (
+        <SleepEditModal
+          defaultDate={parseISO(`${day}T00:00:00`)}
+          onClose={() => setAddingSleep(false)}
+          onSaved={() => {
+            setAddingSleep(false);
+            load();
+            onEventsChanged?.();
+          }}
+        />
+      )}
+
+      {addingFeeding && (
+        <FeedingModal
+          defaultDate={parseISO(`${day}T00:00:00`)}
+          onClose={() => setAddingFeeding(false)}
+          onSaved={() => {
+            setAddingFeeding(false);
+            load();
+            onEventsChanged?.();
           }}
         />
       )}

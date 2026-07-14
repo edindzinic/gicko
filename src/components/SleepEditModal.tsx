@@ -2,28 +2,44 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Tables } from "@/lib/database.types";
+import type { Tables, TablesInsert } from "@/lib/database.types";
 import { combineDateAndTime, toDateInputValue, toTimeInputValue } from "@/lib/time";
 
 export function SleepEditModal({
   session,
+  defaultDate,
   onClose,
   onSaved,
 }: {
-  session: Tables<"sleep_sessions">;
+  session?: Tables<"sleep_sessions">;
+  defaultDate?: Date;
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [startedDate, setStartedDate] = useState(() => toDateInputValue(session.started_at));
-  const [startedTime, setStartedTime] = useState(() => toTimeInputValue(session.started_at));
+  const isEditing = !!session;
+  const now = new Date();
+  const initialStart =
+    session?.started_at ??
+    (defaultDate
+      ? new Date(
+          defaultDate.getFullYear(),
+          defaultDate.getMonth(),
+          defaultDate.getDate(),
+          now.getHours(),
+          now.getMinutes(),
+        )
+      : now);
+
+  const [startedDate, setStartedDate] = useState(() => toDateInputValue(initialStart));
+  const [startedTime, setStartedTime] = useState(() => toTimeInputValue(initialStart));
   const [endedDate, setEndedDate] = useState(() =>
-    session.ended_at ? toDateInputValue(session.ended_at) : "",
+    session?.ended_at ? toDateInputValue(session.ended_at) : "",
   );
   const [endedTime, setEndedTime] = useState(() =>
-    session.ended_at ? toTimeInputValue(session.ended_at) : "",
+    session?.ended_at ? toTimeInputValue(session.ended_at) : "",
   );
-  const [notes, setNotes] = useState(session.notes ?? "");
-  const [isNightSleep, setIsNightSleep] = useState(session.is_night_sleep);
+  const [notes, setNotes] = useState(session?.notes ?? "");
+  const [isNightSleep, setIsNightSleep] = useState(session?.is_night_sleep ?? false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -34,18 +50,19 @@ export function SleepEditModal({
     setError(null);
 
     const supabase = createClient();
-    const { error: saveError } = await supabase
-      .from("sleep_sessions")
-      .update({
-        started_at: combineDateAndTime(startedDate, startedTime).toISOString(),
-        ended_at:
-          endedDate && endedTime
-            ? combineDateAndTime(endedDate, endedTime).toISOString()
-            : null,
-        notes: notes || null,
-        is_night_sleep: isNightSleep,
-      })
-      .eq("id", session.id);
+    const payload: TablesInsert<"sleep_sessions"> = {
+      started_at: combineDateAndTime(startedDate, startedTime).toISOString(),
+      ended_at:
+        endedDate && endedTime
+          ? combineDateAndTime(endedDate, endedTime).toISOString()
+          : null,
+      notes: notes || null,
+      is_night_sleep: isNightSleep,
+    };
+
+    const { error: saveError } = isEditing
+      ? await supabase.from("sleep_sessions").update(payload).eq("id", session.id)
+      : await supabase.from("sleep_sessions").insert(payload);
 
     setSaving(false);
     if (saveError) {
@@ -56,6 +73,7 @@ export function SleepEditModal({
   }
 
   async function handleDelete() {
+    if (!session) return;
     setDeleting(true);
     const supabase = createClient();
     const { error: deleteError } = await supabase
@@ -82,7 +100,9 @@ export function SleepEditModal({
         onClick={(e) => e.stopPropagation()}
         className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-neutral-950"
       >
-        <h2 className="mb-4 text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">Edit sleep</h2>
+        <h2 className="mb-4 text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+          {isEditing ? "Edit sleep" : "Log sleep"}
+        </h2>
 
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
           Started at
@@ -159,33 +179,35 @@ export function SleepEditModal({
           </button>
         </div>
 
-        <div className="mt-3">
-          {confirmingDelete ? (
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <span className="text-neutral-500">Delete this sleep session?</span>
+        {isEditing && (
+          <div className="mt-3">
+            {confirmingDelete ? (
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <span className="text-neutral-500">Delete this sleep session?</span>
+                <button
+                  onClick={() => setConfirmingDelete(false)}
+                  className="rounded-lg px-2 py-1 text-neutral-500"
+                >
+                  No
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="rounded-lg bg-red-600 px-3 py-1 font-medium text-white disabled:opacity-50"
+                >
+                  {deleting ? "Deleting…" : "Yes, delete"}
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={() => setConfirmingDelete(false)}
-                className="rounded-lg px-2 py-1 text-neutral-500"
+                onClick={() => setConfirmingDelete(true)}
+                className="w-full py-1 text-center text-sm text-red-600"
               >
-                No
+                Delete sleep session
               </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="rounded-lg bg-red-600 px-3 py-1 font-medium text-white disabled:opacity-50"
-              >
-                {deleting ? "Deleting…" : "Yes, delete"}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setConfirmingDelete(true)}
-              className="w-full py-1 text-center text-sm text-red-600"
-            >
-              Delete sleep session
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

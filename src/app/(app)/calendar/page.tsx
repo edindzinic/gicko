@@ -221,7 +221,14 @@ export default function CalendarPage() {
       )}
 
       {selectedDay && (
-        <DayDetailPanel day={selectedDay} onClose={() => setSelectedDay(null)} />
+        <DayDetailPanel
+          day={selectedDay}
+          onClose={() => setSelectedDay(null)}
+          onEventsChanged={() => {
+            load();
+            setWeekRefreshKey((k) => k + 1);
+          }}
+        />
       )}
 
       {editingSession && (
