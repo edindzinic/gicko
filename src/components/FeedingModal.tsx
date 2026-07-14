@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables, TablesInsert } from "@/lib/database.types";
 import { combineDateAndTime, toDateInputValue, toTimeInputValue } from "@/lib/time";
-
-type FeedType = "breast" | "bottle" | "formula" | "solid";
+import { FEED_TYPE_ICONS, type FeedType } from "@/lib/feedingTypes";
 
 const FEED_TYPES: { value: FeedType; label: string; icon: string }[] = [
-  { value: "bottle", label: "Bottle", icon: "🍼" },
-  { value: "breast", label: "Breast", icon: "🤱" },
-  { value: "formula", label: "Formula", icon: "🧴" },
-  { value: "solid", label: "Solid", icon: "🥣" },
+  { value: "bottle", label: "Bottle", icon: FEED_TYPE_ICONS.bottle },
+  { value: "breast", label: "Breast", icon: FEED_TYPE_ICONS.breast },
+  { value: "formula", label: "Formula", icon: FEED_TYPE_ICONS.formula },
+  { value: "solid", label: "Solid", icon: FEED_TYPE_ICONS.solid },
 ];
 
 export function FeedingModal({
@@ -53,12 +53,23 @@ export function FeedingModal({
   const [notes, setNotes] = useState(feeding?.notes ?? "");
   const [occurredDate, setOccurredDate] = useState(() => toDateInputValue(initialDateTime));
   const [occurredTime, setOccurredTime] = useState(() => toTimeInputValue(initialDateTime));
+  const [solidFoods, setSolidFoods] = useState<Tables<"solid_foods">[]>([]);
+  const [solidFoodId, setSolidFoodId] = useState<string | null>(feeding?.solid_food_id ?? null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const needsAmount = feedType === "bottle" || feedType === "formula";
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("solid_foods")
+      .select("*")
+      .order("name", { ascending: true })
+      .then(({ data }) => setSolidFoods(data ?? []));
+  }, []);
 
   async function handleSave() {
     setSaving(true);
@@ -72,6 +83,7 @@ export function FeedingModal({
       unit: needsAmount && amount ? unit : null,
       notes: notes || null,
       sleep_session_id: feeding?.sleep_session_id ?? defaultSleepSessionId ?? null,
+      solid_food_id: feedType === "solid" ? solidFoodId : null,
     };
 
     const { error: saveError } = isEditing
@@ -190,6 +202,35 @@ export function FeedingModal({
                 <option value="oz">oz</option>
               </select>
             </div>
+          </div>
+        )}
+
+        {feedType === "solid" && (
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              Food
+            </label>
+            <select
+              value={solidFoodId ?? ""}
+              onChange={(e) => setSolidFoodId(e.target.value || null)}
+              className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
+            >
+              <option value="">None</option>
+              {solidFoods.map((food) => (
+                <option key={food.id} value={food.id}>
+                  {food.name}
+                </option>
+              ))}
+            </select>
+            {solidFoods.length === 0 && (
+              <p className="mt-1 text-xs text-neutral-400">
+                No solid foods yet —{" "}
+                <Link href="/settings" className="underline">
+                  add some in Settings
+                </Link>
+                .
+              </p>
+            )}
           </div>
         )}
 

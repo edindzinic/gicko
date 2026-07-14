@@ -48,6 +48,7 @@ export type Database = {
           notes: string | null
           occurred_at: string
           sleep_session_id: string | null
+          solid_food_id: string | null
           unit: string | null
         }
         Insert: {
@@ -59,6 +60,7 @@ export type Database = {
           notes?: string | null
           occurred_at?: string
           sleep_session_id?: string | null
+          solid_food_id?: string | null
           unit?: string | null
         }
         Update: {
@@ -70,6 +72,7 @@ export type Database = {
           notes?: string | null
           occurred_at?: string
           sleep_session_id?: string | null
+          solid_food_id?: string | null
           unit?: string | null
         }
         Relationships: [
@@ -78,6 +81,13 @@ export type Database = {
             columns: ["sleep_session_id"]
             isOneToOne: false
             referencedRelation: "sleep_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedings_solid_food_id_fkey"
+            columns: ["solid_food_id"]
+            isOneToOne: false
+            referencedRelation: "solid_foods"
             referencedColumns: ["id"]
           },
         ]
@@ -130,6 +140,27 @@ export type Database = {
           is_night_sleep?: boolean
           notes?: string | null
           started_at?: string
+        }
+        Relationships: []
+      }
+      solid_foods: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
         }
         Relationships: []
       }

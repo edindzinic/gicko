@@ -5,6 +5,7 @@ import { addDays, addMinutes, eachDayOfInterval, format, isToday, parseISO } fro
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { formatDuration, formatHourLabel, minutesSinceMidnight, splitIntervalByDay } from "@/lib/time";
+import { feedTypeIcon } from "@/lib/feedingTypes";
 
 const HOUR_HEIGHT = 32; // px per hour
 const DAY_HEIGHT = HOUR_HEIGHT * 24;
@@ -260,7 +261,7 @@ export function WeekView({
                     className="absolute z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-[9px] shadow ring-2 ring-white dark:ring-neutral-950"
                     style={{ top, right: 2 + column * FEEDING_COLUMN_WIDTH_PX }}
                   >
-                    🍼
+                    {feedTypeIcon(feeding.feed_type)}
                   </button>
                 ))}
 

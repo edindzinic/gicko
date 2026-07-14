@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { addMinutes, parseISO } from "date-fns";
 import type { Tables } from "@/lib/database.types";
 import { formatDuration, formatHourLabel, minutesSinceMidnight, splitIntervalByDay } from "@/lib/time";
+import { feedTypeIcon } from "@/lib/feedingTypes";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
@@ -199,7 +200,8 @@ export function DayTimeline({
               className="absolute z-10 flex -translate-y-1/2 items-center gap-1 rounded-full bg-accent px-2 py-1 text-[10px] font-medium text-white shadow ring-2 ring-white dark:ring-neutral-950"
               style={{ top, right: 4 + column * FEEDING_COLUMN_WIDTH_PX }}
             >
-              🍼{feeding.amount ? ` ${feeding.amount}${feeding.unit}` : ""}
+              {feedTypeIcon(feeding.feed_type)}
+              {feeding.amount ? ` ${feeding.amount}${feeding.unit}` : ""}
             </button>
           ))}
 

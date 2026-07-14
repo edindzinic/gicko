@@ -23,8 +23,14 @@ import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
 import { WeekView } from "@/components/WeekView";
 import { findNightWakeUpEndTimes, formatDuration, sessionDurationMinutes } from "@/lib/time";
+import { FEED_TYPE_ICONS } from "@/lib/feedingTypes";
 
-type DayStats = { sleepMinutes: number; feedingCount: number; nightWakeUps: number };
+type DayStats = {
+  sleepMinutes: number;
+  feedingCount: number;
+  solidCount: number;
+  nightWakeUps: number;
+};
 
 export default function CalendarPage() {
   const [view, setView] = useState<"month" | "week">("week");
@@ -85,19 +91,26 @@ export default function CalendarPage() {
     const map = new Map<string, DayStats>();
     for (const s of sessions) {
       const key = format(new Date(s.started_at), "yyyy-MM-dd");
-      const stat = map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, nightWakeUps: 0 };
+      const stat =
+        map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, solidCount: 0, nightWakeUps: 0 };
       stat.sleepMinutes += sessionDurationMinutes(s.started_at, s.ended_at);
       map.set(key, stat);
     }
     for (const f of feedings) {
       const key = format(new Date(f.occurred_at), "yyyy-MM-dd");
-      const stat = map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, nightWakeUps: 0 };
-      stat.feedingCount += 1;
+      const stat =
+        map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, solidCount: 0, nightWakeUps: 0 };
+      if (f.feed_type === "solid") {
+        stat.solidCount += 1;
+      } else {
+        stat.feedingCount += 1;
+      }
       map.set(key, stat);
     }
     for (const wakeUpEnd of findNightWakeUpEndTimes(nightSessions)) {
       const key = format(new Date(wakeUpEnd), "yyyy-MM-dd");
-      const stat = map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, nightWakeUps: 0 };
+      const stat =
+        map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, solidCount: 0, nightWakeUps: 0 };
       stat.nightWakeUps += 1;
       map.set(key, stat);
     }
@@ -207,7 +220,8 @@ export default function CalendarPage() {
                   {stat && (
                     <div className="mt-auto space-y-0.5 text-[10px] leading-tight text-neutral-500 sm:text-xs">
                       {stat.sleepMinutes > 0 && <p>😴 {formatDuration(stat.sleepMinutes)}</p>}
-                      {stat.feedingCount > 0 && <p>🍼 ×{stat.feedingCount}</p>}
+                      {stat.feedingCount > 0 && <p>{FEED_TYPE_ICONS.bottle} ×{stat.feedingCount}</p>}
+                      {stat.solidCount > 0 && <p>{FEED_TYPE_ICONS.solid} ×{stat.solidCount}</p>}
                       {stat.nightWakeUps > 0 && <p>🌙 ×{stat.nightWakeUps}</p>}
                     </div>
                   )}
