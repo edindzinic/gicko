@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { addDays, endOfDay, format, isToday, startOfDay, subDays } from "date-fns";
+import { addDays, differenceInMinutes, endOfDay, format, isToday, parseISO, startOfDay, subDays } from "date-fns";
 import { ChevronLeft, ChevronRight, Milk, Moon, PencilLine, Sun, Timer } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
@@ -37,9 +37,16 @@ export default function HomePage() {
     null,
   );
   const [creatingFeeding, setCreatingFeeding] = useState<{ at: Date } | null>(null);
+  const [now, setNow] = useState(() => new Date());
 
   const viewingToday = isToday(selectedDate);
   const dayKey = format(selectedDate, "yyyy-MM-dd");
+
+  useEffect(() => {
+    if (!viewingToday) return;
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, [viewingToday]);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -120,6 +127,10 @@ export default function HomePage() {
   const nightWakeUps = findNightWakeUpEndTimes(nightSessions).filter(
     (t) => format(new Date(t), "yyyy-MM-dd") === dayKey,
   ).length;
+  const totalMlToday = dayFeedings.reduce((sum, f) => {
+    if (f.amount == null) return sum;
+    return sum + (f.unit === "oz" ? f.amount * 29.5735 : f.amount);
+  }, 0);
 
   if (loading) {
     return <div className="p-6 text-center text-neutral-400">Loading…</div>;
@@ -165,13 +176,19 @@ export default function HomePage() {
               : (lastEndedSession?.ended_at ?? null);
 
             return statusSession && statusTime ? (
-              <button
-                onClick={() => setEditingSession(statusSession)}
-                className="mb-4 flex items-center gap-2 text-3xl font-semibold tracking-tight"
-              >
-                {formatTime(statusTime)}
-                <PencilLine className="h-4 w-4 opacity-70" strokeWidth={1.75} />
-              </button>
+              <>
+                <button
+                  onClick={() => setEditingSession(statusSession)}
+                  className="mb-1 flex items-center gap-2 text-3xl font-semibold tracking-tight"
+                >
+                  {formatTime(statusTime)}
+                  <PencilLine className="h-4 w-4 opacity-70" strokeWidth={1.75} />
+                </button>
+                <p className="mb-4 text-sm font-medium opacity-90">
+                  {formatDuration(Math.max(0, differenceInMinutes(now, parseISO(statusTime))))}{" "}
+                  {openSession ? "asleep" : "awake"}
+                </p>
+              </>
             ) : (
               <p className="mb-4 text-3xl font-semibold">—</p>
             );
@@ -261,6 +278,9 @@ export default function HomePage() {
             {dayFeedings.length}
           </p>
           <p className="text-xs text-neutral-500">Feedings</p>
+          {totalMlToday > 0 && (
+            <p className="text-[11px] text-neutral-400">{Math.round(totalMlToday)}ml</p>
+          )}
         </div>
         <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
           <Timer className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
