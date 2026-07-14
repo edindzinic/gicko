@@ -33,6 +33,10 @@ export default function HomePage() {
   const [nightAwakeningPending, setNightAwakeningPending] = useState(false);
   const [editingSession, setEditingSession] = useState<SleepSession | null>(null);
   const [editingFeeding, setEditingFeeding] = useState<Feeding | null>(null);
+  const [creatingSleep, setCreatingSleep] = useState<{ start: Date; end: Date | null } | null>(
+    null,
+  );
+  const [creatingFeeding, setCreatingFeeding] = useState<{ at: Date } | null>(null);
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
 
   const viewingToday = isToday(selectedDate);
@@ -286,6 +290,8 @@ export default function HomePage() {
         isToday={viewingToday}
         onSelectSession={setEditingSession}
         onSelectFeeding={setEditingFeeding}
+        onCreateSleep={(start, end) => setCreatingSleep({ start, end })}
+        onCreateFeeding={(at) => setCreatingFeeding({ at })}
       />
 
       {feedingModalSleepId !== undefined && (
@@ -317,6 +323,29 @@ export default function HomePage() {
           onClose={() => setEditingFeeding(null)}
           onSaved={() => {
             setEditingFeeding(null);
+            load();
+          }}
+        />
+      )}
+
+      {creatingSleep && (
+        <SleepEditModal
+          defaultStart={creatingSleep.start}
+          defaultEnd={creatingSleep.end ?? undefined}
+          onClose={() => setCreatingSleep(null)}
+          onSaved={() => {
+            setCreatingSleep(null);
+            load();
+          }}
+        />
+      )}
+
+      {creatingFeeding && (
+        <FeedingModal
+          defaultDateTime={creatingFeeding.at}
+          onClose={() => setCreatingFeeding(null)}
+          onSaved={() => {
+            setCreatingFeeding(null);
             load();
           }}
         />

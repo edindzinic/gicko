@@ -26,8 +26,8 @@ export function DayDetailPanel({
   const [loading, setLoading] = useState(true);
   const [editingSession, setEditingSession] = useState<Tables<"sleep_sessions"> | null>(null);
   const [editingFeeding, setEditingFeeding] = useState<Tables<"feedings"> | null>(null);
-  const [addingSleep, setAddingSleep] = useState(false);
-  const [addingFeeding, setAddingFeeding] = useState(false);
+  const [addingSleep, setAddingSleep] = useState<{ start?: Date; end?: Date } | null>(null);
+  const [addingFeeding, setAddingFeeding] = useState<{ at?: Date } | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -110,13 +110,13 @@ export function DayDetailPanel({
           <>
             <div className="mb-4 flex gap-2">
               <button
-                onClick={() => setAddingSleep(true)}
+                onClick={() => setAddingSleep({})}
                 className="flex-1 rounded-xl border-2 border-accent py-2.5 text-sm font-semibold text-accent active:scale-[0.98]"
               >
                 😴 Log sleep
               </button>
               <button
-                onClick={() => setAddingFeeding(true)}
+                onClick={() => setAddingFeeding({})}
                 className="flex-1 rounded-xl border-2 border-accent py-2.5 text-sm font-semibold text-accent active:scale-[0.98]"
               >
                 🍼 Log feeding
@@ -131,6 +131,8 @@ export function DayDetailPanel({
                 isToday={isTodayFn(parseISO(`${day}T00:00:00`))}
                 onSelectSession={setEditingSession}
                 onSelectFeeding={setEditingFeeding}
+                onCreateSleep={(start, end) => setAddingSleep({ start, end: end ?? undefined })}
+                onCreateFeeding={(at) => setAddingFeeding({ at })}
               />
             </div>
 
@@ -177,9 +179,11 @@ export function DayDetailPanel({
       {addingSleep && (
         <SleepEditModal
           defaultDate={parseISO(`${day}T00:00:00`)}
-          onClose={() => setAddingSleep(false)}
+          defaultStart={addingSleep.start}
+          defaultEnd={addingSleep.end}
+          onClose={() => setAddingSleep(null)}
           onSaved={() => {
-            setAddingSleep(false);
+            setAddingSleep(null);
             load();
             onEventsChanged?.();
           }}
@@ -189,9 +193,10 @@ export function DayDetailPanel({
       {addingFeeding && (
         <FeedingModal
           defaultDate={parseISO(`${day}T00:00:00`)}
-          onClose={() => setAddingFeeding(false)}
+          defaultDateTime={addingFeeding.at}
+          onClose={() => setAddingFeeding(null)}
           onSaved={() => {
-            setAddingFeeding(false);
+            setAddingFeeding(null);
             load();
             onEventsChanged?.();
           }}
