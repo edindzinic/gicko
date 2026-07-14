@@ -109,11 +109,12 @@ export function splitIntervalByDay(startedAt: string, endedAt: string | null): D
 const NIGHT_ATTRIBUTION_CUTOFF_HOUR = 17; // 5pm — night sleep starting after this belongs to the next day's stats
 
 /**
- * Computes two day-view stats that don't line up with calendar-day boundaries:
+ * Computes day-view stats that don't line up with calendar-day boundaries:
  * - nightSleepMinutes: total night sleep "attributed" to this day, i.e. the sleep from
  *   last night — including the portion that started after 5pm the previous day.
  * - dayAwakeMinutes: awake time during the day only (from this morning's wake-up to
  *   tonight's bedtime), excluding any awake gaps between last night's wake-ups.
+ * - napMinutes: total non-night sleep during that same daytime window.
  *
  * `nightSessions` must be unscoped by day (all is_night_sleep rows) so a chain that ends
  * before midnight — and so wouldn't otherwise overlap this calendar day at all — is still
@@ -176,5 +177,5 @@ export function computeDayStats(
 
   const dayAwakeMinutes = Math.max(0, totalDayMinutes - napMinutes);
 
-  return { nightSleepMinutes, dayAwakeMinutes };
+  return { nightSleepMinutes, dayAwakeMinutes, napMinutes };
 }

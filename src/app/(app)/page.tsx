@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { addDays, differenceInMinutes, endOfDay, format, isToday, parseISO, startOfDay, subDays } from "date-fns";
-import { ChevronLeft, ChevronRight, Milk, Moon, PencilLine, Sun, Timer } from "lucide-react";
+import { Bed, ChevronLeft, ChevronRight, Milk, Moon, PencilLine, Sun, Timer } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { FeedingModal } from "@/components/FeedingModal";
@@ -118,7 +118,7 @@ export default function HomePage() {
     setNightAwakeningPending(true);
   }
 
-  const { nightSleepMinutes, dayAwakeMinutes } = computeDayStats(
+  const { nightSleepMinutes, dayAwakeMinutes, napMinutes } = computeDayStats(
     dayKey,
     nightSessions,
     daySessions,
@@ -257,7 +257,7 @@ export default function HomePage() {
       )}
 
       {/* Day rollup */}
-      <div className="mb-6 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 text-center sm:grid-cols-5">
         <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
           <Moon className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
@@ -266,11 +266,18 @@ export default function HomePage() {
           <p className="text-xs text-neutral-500">Night sleep</p>
         </div>
         <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
+          <Bed className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
+          <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+            {formatDuration(napMinutes)}
+          </p>
+          <p className="text-xs text-neutral-500">Naps total</p>
+        </div>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
           <Sun className="mx-auto mb-1 h-4 w-4 text-accent" strokeWidth={1.75} />
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             {formatDuration(dayAwakeMinutes)}
           </p>
-          <p className="text-xs text-neutral-500">Awake</p>
+          <p className="text-xs text-neutral-500">Daytime awake</p>
         </div>
         <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
           <Milk className="mx-auto mb-1 h-4 w-4 text-accent" strokeWidth={1.75} />
@@ -282,7 +289,7 @@ export default function HomePage() {
             <p className="text-[11px] text-neutral-400">{Math.round(totalMlToday)}ml</p>
           )}
         </div>
-        <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
+        <div className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 sm:col-span-1">
           <Timer className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             {nightWakeUps}
