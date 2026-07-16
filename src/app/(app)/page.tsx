@@ -14,6 +14,7 @@ import {
   formatDuration,
   formatTime,
   isNightTime,
+  sessionDurationMinutes,
 } from "@/lib/time";
 import { feedTypeIcon, feedTypeLabel } from "@/lib/feedingTypes";
 
@@ -42,6 +43,7 @@ export default function HomePage() {
   const [solidFoods, setSolidFoods] = useState<Tables<"solid_foods">[]>([]);
   const [showFeedingsBreakdown, setShowFeedingsBreakdown] = useState(false);
   const [showWakeUpsBreakdown, setShowWakeUpsBreakdown] = useState(false);
+  const [showNapsBreakdown, setShowNapsBreakdown] = useState(false);
 
   const viewingToday = isToday(selectedDate);
   const dayKey = format(selectedDate, "yyyy-MM-dd");
@@ -147,6 +149,9 @@ export default function HomePage() {
   const sortedDayFeedings = [...dayFeedings].sort(
     (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime(),
   );
+  const todayNaps = daySessions
+    .filter((s) => !s.is_night_sleep)
+    .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
 
   if (loading) {
     return <div className="p-6 text-center text-neutral-400">Loading…</div>;
@@ -288,13 +293,16 @@ export default function HomePage() {
           </p>
           <p className="text-xs text-neutral-500">Daytime awake</p>
         </div>
-        <div className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 sm:col-span-1">
+        <button
+          onClick={() => setShowNapsBreakdown(true)}
+          className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900 sm:col-span-1"
+        >
           <Bed className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             {formatDuration(napMinutes)}
           </p>
           <p className="text-xs text-neutral-500">Naps total</p>
-        </div>
+        </button>
         <button
           onClick={() => setShowFeedingsBreakdown(true)}
           className="col-span-3 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900 sm:col-span-1"
@@ -489,6 +497,59 @@ export default function HomePage() {
                     <p className="text-xs text-neutral-500">
                       Awake for {formatDuration(w.awakeMinutes)}
                     </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showNapsBreakdown && (
+        <div
+          className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center"
+          onClick={() => setShowNapsBreakdown(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-neutral-950"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                Naps today
+              </h2>
+              <button
+                onClick={() => setShowNapsBreakdown(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-900"
+              >
+                <X className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </div>
+
+            {todayNaps.length === 0 ? (
+              <p className="py-6 text-center text-sm text-neutral-400">No naps logged today.</p>
+            ) : (
+              <ul className="space-y-2">
+                {todayNaps.map((nap) => (
+                  <li key={nap.id}>
+                    <button
+                      onClick={() => {
+                        setShowNapsBreakdown(false);
+                        setEditingSession(nap);
+                      }}
+                      className="flex w-full items-center justify-between rounded-xl border border-neutral-200 px-3 py-2.5 text-left dark:border-neutral-800"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="text-lg">🛏️</span>
+                        <span className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
+                          {formatTime(nap.started_at)}
+                          {nap.ended_at ? ` – ${formatTime(nap.ended_at)}` : " – ongoing"}
+                        </span>
+                      </span>
+                      <span className="text-sm text-neutral-600 dark:text-neutral-300">
+                        {formatDuration(sessionDurationMinutes(nap.started_at, nap.ended_at))}
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ul>
