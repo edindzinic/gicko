@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { addDays, differenceInMinutes, endOfDay, format, isToday, parseISO, startOfDay, subDays } from "date-fns";
-import { Bed, ChevronLeft, ChevronRight, Milk, Moon, PencilLine, Sun, Timer } from "lucide-react";
+import { Bed, ChevronLeft, ChevronRight, Milk, Moon, PencilLine, Sun, Timer, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { FeedingModal } from "@/components/FeedingModal";
@@ -10,11 +10,12 @@ import { SleepEditModal } from "@/components/SleepEditModal";
 import { DayTimeline } from "@/components/DayTimeline";
 import {
   computeDayStats,
-  findNightWakeUpEndTimes,
+  findNightWakeUps,
   formatDuration,
   formatTime,
   isNightTime,
 } from "@/lib/time";
+import { feedTypeIcon, feedTypeLabel } from "@/lib/feedingTypes";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
@@ -38,6 +39,9 @@ export default function HomePage() {
   );
   const [creatingFeeding, setCreatingFeeding] = useState<{ at: Date } | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [solidFoods, setSolidFoods] = useState<Tables<"solid_foods">[]>([]);
+  const [showFeedingsBreakdown, setShowFeedingsBreakdown] = useState(false);
+  const [showWakeUpsBreakdown, setShowWakeUpsBreakdown] = useState(false);
 
   const viewingToday = isToday(selectedDate);
   const dayKey = format(selectedDate, "yyyy-MM-dd");
@@ -47,6 +51,14 @@ export default function HomePage() {
     const id = setInterval(() => setNow(new Date()), 30000);
     return () => clearInterval(id);
   }, [viewingToday]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("solid_foods")
+      .select("*")
+      .then(({ data }) => setSolidFoods(data ?? []));
+  }, []);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -124,13 +136,17 @@ export default function HomePage() {
     daySessions,
     viewingToday ? new Date() : endOfDay(selectedDate),
   );
-  const nightWakeUps = findNightWakeUpEndTimes(nightSessions).filter(
-    (t) => format(new Date(t), "yyyy-MM-dd") === dayKey,
-  ).length;
+  const todayNightWakeUps = findNightWakeUps(nightSessions).filter(
+    (w) => format(new Date(w.wokeAt), "yyyy-MM-dd") === dayKey,
+  );
   const totalMlToday = dayFeedings.reduce((sum, f) => {
     if (f.amount == null) return sum;
     return sum + (f.unit === "oz" ? f.amount * 29.5735 : f.amount);
   }, 0);
+  const solidFoodNameById = new Map(solidFoods.map((f) => [f.id, f.name]));
+  const sortedDayFeedings = [...dayFeedings].sort(
+    (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime(),
+  );
 
   if (loading) {
     return <div className="p-6 text-center text-neutral-400">Loading…</div>;
@@ -279,7 +295,10 @@ export default function HomePage() {
           </p>
           <p className="text-xs text-neutral-500">Naps total</p>
         </div>
-        <div className="col-span-3 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 sm:col-span-1">
+        <button
+          onClick={() => setShowFeedingsBreakdown(true)}
+          className="col-span-3 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900 sm:col-span-1"
+        >
           <Milk className="mx-auto mb-1 h-4 w-4 text-accent" strokeWidth={1.75} />
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             {dayFeedings.length}
@@ -288,14 +307,17 @@ export default function HomePage() {
           {totalMlToday > 0 && (
             <p className="text-[11px] text-neutral-400">{Math.round(totalMlToday)}ml</p>
           )}
-        </div>
-        <div className="col-span-3 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 sm:col-span-1">
+        </button>
+        <button
+          onClick={() => setShowWakeUpsBreakdown(true)}
+          className="col-span-3 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900 sm:col-span-1"
+        >
           <Timer className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-            {nightWakeUps}
+            {todayNightWakeUps.length}
           </p>
           <p className="text-xs text-neutral-500">Night wake-ups</p>
-        </div>
+        </button>
       </div>
 
       {/* Timeline */}
@@ -366,6 +388,113 @@ export default function HomePage() {
             load();
           }}
         />
+      )}
+
+      {showFeedingsBreakdown && (
+        <div
+          className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center"
+          onClick={() => setShowFeedingsBreakdown(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-neutral-950"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                Feedings today
+              </h2>
+              <button
+                onClick={() => setShowFeedingsBreakdown(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-900"
+              >
+                <X className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </div>
+
+            {sortedDayFeedings.length === 0 ? (
+              <p className="py-6 text-center text-sm text-neutral-400">No feedings logged today.</p>
+            ) : (
+              <ul className="space-y-2">
+                {sortedDayFeedings.map((f) => (
+                  <li key={f.id}>
+                    <button
+                      onClick={() => {
+                        setShowFeedingsBreakdown(false);
+                        setEditingFeeding(f);
+                      }}
+                      className="flex w-full items-center justify-between rounded-xl border border-neutral-200 px-3 py-2.5 text-left dark:border-neutral-800"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="text-lg">{feedTypeIcon(f.feed_type)}</span>
+                        <span>
+                          <span className="block text-sm font-medium text-neutral-900 dark:text-neutral-50">
+                            {formatTime(f.occurred_at)}
+                          </span>
+                          <span className="block text-xs text-neutral-500">
+                            {feedTypeLabel(f.feed_type)}
+                            {f.feed_type === "solid" && f.solid_food_id && solidFoodNameById.get(f.solid_food_id)
+                              ? ` · ${solidFoodNameById.get(f.solid_food_id)}`
+                              : ""}
+                          </span>
+                        </span>
+                      </span>
+                      {f.amount != null && (
+                        <span className="text-sm text-neutral-600 dark:text-neutral-300">
+                          {f.amount}
+                          {f.unit}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showWakeUpsBreakdown && (
+        <div
+          className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center"
+          onClick={() => setShowWakeUpsBreakdown(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-neutral-950"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                Night wake-ups today
+              </h2>
+              <button
+                onClick={() => setShowWakeUpsBreakdown(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-900"
+              >
+                <X className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </div>
+
+            {todayNightWakeUps.length === 0 ? (
+              <p className="py-6 text-center text-sm text-neutral-400">No night wake-ups today.</p>
+            ) : (
+              <ul className="space-y-2">
+                {todayNightWakeUps.map((w, i) => (
+                  <li
+                    key={i}
+                    className="rounded-xl border border-neutral-200 px-3 py-2.5 dark:border-neutral-800"
+                  >
+                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
+                      {formatTime(w.wokeAt)} – {formatTime(w.backAsleepAt)}
+                    </p>
+                    <p className="text-xs text-neutral-500">
+                      Awake for {formatDuration(w.awakeMinutes)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       )}
 
       {wakePrompt && (
