@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { addDays, addMinutes, eachDayOfInterval, format, isToday, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
@@ -10,10 +10,15 @@ import { feedTypeIcon } from "@/lib/feedingTypes";
 const HOUR_HEIGHT = 32; // px per hour
 const DAY_HEIGHT = HOUR_HEIGHT * 24;
 const HOUR_LABELS = [0, 3, 6, 9, 12, 15, 18, 21];
-const DRAG_THRESHOLD_PX = 6;
 const SNAP_MINUTES = 5;
 const FEEDING_MIN_GAP_PX = 16; // min vertical gap before two feeding badges would overlap
 const FEEDING_COLUMN_WIDTH_PX = 18;
+// Sized off the viewport (not a % of the row, which overflows) so exactly 3
+// days are visible at a time on mobile alongside the 56px hour gutter and the
+// page's own 2×16px padding — scroll for the rest. Larger screens pack all 7
+// into view instead. (Avoids `container-type`, which would turn this into a
+// containing block for the tap-prompt's fixed-position dismiss backdrop.)
+const DAY_COLUMN_CLASS = "w-[calc((100vw-88px)/3)] shrink-0 sm:w-auto sm:flex-1 sm:shrink";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
@@ -40,15 +45,6 @@ function minutesToDate(day: string, minutes: number) {
   return addMinutes(parseISO(`${day}T00:00:00`), minutes);
 }
 
-type DragState = {
-  day: string;
-  pointerId: number;
-  rectTop: number;
-  originMinutes: number;
-  currentMinutes: number;
-  moved: boolean;
-};
-
 export function WeekView({
   weekStart,
   onSelectSession,
@@ -67,7 +63,6 @@ export function WeekView({
   const [sessions, setSessions] = useState<SleepSession[]>([]);
   const [feedings, setFeedings] = useState<Feeding[]>([]);
   const [loading, setLoading] = useState(true);
-  const [drag, setDrag] = useState<DragState | null>(null);
   const [tapPrompt, setTapPrompt] = useState<{ day: string; minutes: number } | null>(null);
 
   const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
@@ -104,39 +99,11 @@ export function WeekView({
     load();
   }, [load]);
 
-  function handlePointerDown(e: PointerEvent<HTMLDivElement>, day: string) {
+  function handleColumnClick(e: MouseEvent<HTMLDivElement>, day: string) {
     if ((e.target as HTMLElement).closest("button")) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const minutes = clampMinutes(((e.clientY - rect.top) / DAY_HEIGHT) * 1440);
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setTapPrompt(null);
-    setDrag({
-      day,
-      pointerId: e.pointerId,
-      rectTop: rect.top,
-      originMinutes: minutes,
-      currentMinutes: minutes,
-      moved: false,
-    });
-  }
-
-  function handlePointerMove(e: PointerEvent<HTMLDivElement>) {
-    if (!drag || e.pointerId !== drag.pointerId) return;
-    const minutes = clampMinutes(((e.clientY - drag.rectTop) / DAY_HEIGHT) * 1440);
-    const movedPx = Math.abs(e.clientY - (drag.rectTop + pct(drag.originMinutes)));
-    setDrag({ ...drag, currentMinutes: minutes, moved: drag.moved || movedPx > DRAG_THRESHOLD_PX });
-  }
-
-  function handlePointerUp(e: PointerEvent<HTMLDivElement>) {
-    if (!drag || e.pointerId !== drag.pointerId) return;
-    if (drag.moved) {
-      const start = snapMinutes(Math.min(drag.originMinutes, drag.currentMinutes));
-      const end = Math.max(snapMinutes(Math.max(drag.originMinutes, drag.currentMinutes)), start + SNAP_MINUTES);
-      onCreateSleep(drag.day, minutesToDate(drag.day, start), minutesToDate(drag.day, end));
-    } else {
-      setTapPrompt({ day: drag.day, minutes: snapMinutes(drag.originMinutes) });
-    }
-    setDrag(null);
+    setTapPrompt({ day, minutes: snapMinutes(minutes) });
   }
 
   const weekDayKeys = new Set(days.map((d) => format(d, "yyyy-MM-dd")));
@@ -166,13 +133,13 @@ export function WeekView({
   return (
     <div className={`isolate ${loading ? "opacity-50" : ""}`}>
       <div className="overflow-x-auto">
-        <div className="flex min-w-[720px]">
+        <div className="flex sm:min-w-[720px]">
           <div className="w-14 shrink-0" />
           {days.map((day) => (
             <button
               key={day.toISOString()}
               onClick={() => onSelectDay(format(day, "yyyy-MM-dd"))}
-              className={`flex-1 rounded-xl py-2 text-center text-xs font-medium hover:bg-neutral-100 dark:hover:bg-neutral-900 ${
+              className={`${DAY_COLUMN_CLASS} rounded-xl py-2 text-center text-xs font-medium hover:bg-neutral-100 dark:hover:bg-neutral-900 ${
                 isToday(day) ? "text-accent" : "text-neutral-400"
               }`}
             >
@@ -182,7 +149,7 @@ export function WeekView({
           ))}
         </div>
 
-        <div className="flex min-w-[720px]">
+        <div className="flex sm:min-w-[720px]">
           <div className="relative w-14 shrink-0" style={{ height: DAY_HEIGHT }}>
             {HOUR_LABELS.map((hour) => (
               <div
@@ -215,12 +182,9 @@ export function WeekView({
             return (
               <div
                 key={key}
-                className="relative flex-1 touch-none border-l border-neutral-100 dark:border-neutral-900"
+                className={`${DAY_COLUMN_CLASS} relative border-l border-neutral-100 dark:border-neutral-900`}
                 style={{ height: DAY_HEIGHT }}
-                onPointerDown={(e) => handlePointerDown(e, key)}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={() => setDrag(null)}
+                onClick={(e) => handleColumnClick(e, key)}
               >
                 {HOUR_LABELS.map((hour) => (
                   <div
@@ -265,24 +229,14 @@ export function WeekView({
                   </button>
                 ))}
 
-                {drag && drag.day === key && drag.moved && (
-                  <div
-                    className="pointer-events-none absolute inset-x-0.5 z-20 rounded-lg bg-accent/40 px-1 text-[10px] leading-tight whitespace-nowrap text-white ring-2 ring-accent"
-                    style={{
-                      top: pct(Math.min(drag.originMinutes, drag.currentMinutes)),
-                      height: Math.max(pct(Math.abs(drag.currentMinutes - drag.originMinutes)), 6),
-                    }}
-                  >
-                    {minuteLabel(snapMinutes(Math.min(drag.originMinutes, drag.currentMinutes)))}–
-                    {minuteLabel(snapMinutes(Math.max(drag.originMinutes, drag.currentMinutes)))}
-                  </div>
-                )}
-
                 {tapPrompt && tapPrompt.day === key && (
                   <>
                     <div
                       className="fixed inset-0 z-30"
-                      onPointerDown={() => setTapPrompt(null)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTapPrompt(null);
+                      }}
                     />
                     <div
                       className="absolute inset-x-0.5 z-40 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-lg dark:border-neutral-800 dark:bg-neutral-900"

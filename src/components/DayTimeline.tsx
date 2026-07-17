@@ -227,7 +227,13 @@ export function DayTimeline({
 
           {tapPrompt !== null && (
             <>
-              <div className="fixed inset-0 z-30" onPointerDown={() => setTapPrompt(null)} />
+              <div
+                className="fixed inset-0 z-30"
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  setTapPrompt(null);
+                }}
+              />
               <div
                 className="absolute inset-x-2 z-40 rounded-xl border border-neutral-200 bg-white p-2 shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
                 style={{ top: topForMinutes(tapPrompt) }}
