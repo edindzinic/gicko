@@ -339,6 +339,7 @@ export default function HomePage() {
         onSelectFeeding={setEditingFeeding}
         onCreateSleep={(start, end) => setCreatingSleep({ start, end })}
         onCreateFeeding={(at) => setCreatingFeeding({ at })}
+        allowDragCreate={false}
       />
 
       {feedingModalSleepId !== undefined && (

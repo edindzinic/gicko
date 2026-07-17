@@ -51,6 +51,7 @@ export function DayTimeline({
   onCreateSleep,
   onCreateFeeding,
   isToday = false,
+  allowDragCreate = true,
 }: {
   day: string; // yyyy-MM-dd
   sessions: SleepSession[];
@@ -60,6 +61,8 @@ export function DayTimeline({
   onCreateSleep: (start: Date, end: Date | null) => void;
   onCreateFeeding: (at: Date) => void;
   isToday?: boolean;
+  /** Set false to disable dragging to create a sleep session with a range (tap-to-choose still works). */
+  allowDragCreate?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
@@ -89,9 +92,11 @@ export function DayTimeline({
   function handlePointerUp(e: PointerEvent<HTMLDivElement>) {
     if (!drag || e.pointerId !== drag.pointerId) return;
     if (drag.moved) {
-      const start = snapMinutes(Math.min(drag.originMinutes, drag.currentMinutes));
-      const end = Math.max(snapMinutes(Math.max(drag.originMinutes, drag.currentMinutes)), start + SNAP_MINUTES);
-      onCreateSleep(minutesToDate(start), minutesToDate(end));
+      if (allowDragCreate) {
+        const start = snapMinutes(Math.min(drag.originMinutes, drag.currentMinutes));
+        const end = Math.max(snapMinutes(Math.max(drag.originMinutes, drag.currentMinutes)), start + SNAP_MINUTES);
+        onCreateSleep(minutesToDate(start), minutesToDate(end));
+      }
     } else {
       setTapPrompt(snapMinutes(drag.originMinutes));
     }
@@ -205,7 +210,7 @@ export function DayTimeline({
             </button>
           ))}
 
-          {drag && drag.moved && (
+          {drag && drag.moved && allowDragCreate && (
             <div
               className="pointer-events-none absolute inset-x-2 z-20 rounded-lg bg-accent/40 px-2 py-1 text-[10px] leading-tight text-white ring-2 ring-accent"
               style={{
