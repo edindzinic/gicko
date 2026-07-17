@@ -2,18 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  addDays,
   addMonths,
-  addWeeks,
-  eachDayOfInterval,
   endOfMonth,
   endOfWeek,
+  eachDayOfInterval,
   format,
   isSameMonth,
   isToday,
+  startOfDay,
   startOfMonth,
   startOfWeek,
+  subDays,
   subMonths,
-  subWeeks,
 } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -21,7 +22,7 @@ import type { Tables } from "@/lib/database.types";
 import { DayDetailPanel } from "@/components/DayDetailPanel";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
-import { WeekView } from "@/components/WeekView";
+import { VISIBLE_DAYS, WeekView } from "@/components/WeekView";
 import { findNightWakeUpEndTimes, formatDuration, sessionDurationMinutes } from "@/lib/time";
 import { FEED_TYPE_ICONS } from "@/lib/feedingTypes";
 
@@ -35,7 +36,7 @@ type DayStats = {
 export default function CalendarPage() {
   const [view, setView] = useState<"month" | "week">("week");
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [daysViewStart, setDaysViewStart] = useState(() => startOfDay(new Date()));
   const [sessions, setSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [feedings, setFeedings] = useState<Tables<"feedings">[]>([]);
   const [nightSessions, setNightSessions] = useState<Tables<"sleep_sessions">[]>([]);
@@ -132,7 +133,7 @@ export default function CalendarPage() {
         <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
           {view === "month"
             ? format(month, "MMMM yyyy")
-            : `${format(weekStart, "MMM d")} – ${format(addWeeks(weekStart, 1), "MMM d")}`}
+            : `${format(daysViewStart, "MMM d")} – ${format(addDays(daysViewStart, VISIBLE_DAYS - 1), "MMM d")}`}
         </h1>
         <div className="flex items-center gap-3">
           <div className="flex rounded-2xl border border-neutral-200 p-0.5 text-sm dark:border-neutral-800">
@@ -158,7 +159,7 @@ export default function CalendarPage() {
               onClick={() =>
                 view === "month"
                   ? setMonth((m) => subMonths(m, 1))
-                  : setWeekStart((w) => subWeeks(w, 1))
+                  : setDaysViewStart((d) => subDays(d, VISIBLE_DAYS))
               }
               aria-label="Previous"
               className="flex h-9 w-9 items-center justify-center rounded-2xl border border-neutral-200 text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
@@ -169,7 +170,7 @@ export default function CalendarPage() {
               onClick={() =>
                 view === "month"
                   ? setMonth(startOfMonth(new Date()))
-                  : setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))
+                  : setDaysViewStart(startOfDay(new Date()))
               }
               className="rounded-2xl border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
             >
@@ -179,7 +180,7 @@ export default function CalendarPage() {
               onClick={() =>
                 view === "month"
                   ? setMonth((m) => addMonths(m, 1))
-                  : setWeekStart((w) => addWeeks(w, 1))
+                  : setDaysViewStart((d) => addDays(d, VISIBLE_DAYS))
               }
               aria-label="Next"
               className="flex h-9 w-9 items-center justify-center rounded-2xl border border-neutral-200 text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
@@ -233,7 +234,7 @@ export default function CalendarPage() {
       ) : (
         <WeekView
           key={weekRefreshKey}
-          weekStart={weekStart}
+          startDate={daysViewStart}
           onSelectDay={setSelectedDay}
           onSelectSession={setEditingSession}
           onSelectFeeding={setEditingFeeding}

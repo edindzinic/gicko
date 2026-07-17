@@ -13,12 +13,7 @@ const HOUR_LABELS = [0, 3, 6, 9, 12, 15, 18, 21];
 const SNAP_MINUTES = 5;
 const FEEDING_MIN_GAP_PX = 16; // min vertical gap before two feeding badges would overlap
 const FEEDING_COLUMN_WIDTH_PX = 18;
-// Sized off the viewport (not a % of the row, which overflows) so exactly 3
-// days are visible at a time on mobile alongside the 56px hour gutter and the
-// page's own 2×16px padding — scroll for the rest. Larger screens pack all 7
-// into view instead. (Avoids `container-type`, which would turn this into a
-// containing block for the tap-prompt's fixed-position dismiss backdrop.)
-const DAY_COLUMN_CLASS = "w-[calc((100vw-88px)/3)] shrink-0 sm:w-auto sm:flex-1 sm:shrink";
+export const VISIBLE_DAYS = 3;
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
@@ -46,14 +41,14 @@ function minutesToDate(day: string, minutes: number) {
 }
 
 export function WeekView({
-  weekStart,
+  startDate,
   onSelectSession,
   onSelectFeeding,
   onSelectDay,
   onCreateSleep,
   onCreateFeeding,
 }: {
-  weekStart: Date;
+  startDate: Date;
   onSelectSession: (session: SleepSession) => void;
   onSelectFeeding: (feeding: Feeding) => void;
   onSelectDay: (day: string) => void;
@@ -65,15 +60,15 @@ export function WeekView({
   const [loading, setLoading] = useState(true);
   const [tapPrompt, setTapPrompt] = useState<{ day: string; minutes: number } | null>(null);
 
-  const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
+  const days = eachDayOfInterval({ start: startDate, end: addDays(startDate, VISIBLE_DAYS - 1) });
 
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    // Buffer a day on each side so overnight sessions spanning the week's
-    // edges still show up (and get clipped to this week by splitIntervalByDay).
-    const rangeStart = addDays(weekStart, -1).toISOString();
-    const rangeEnd = addDays(weekStart, 8).toISOString();
+    // Buffer a day on each side so overnight sessions spanning the window's
+    // edges still show up (and get clipped to this window by splitIntervalByDay).
+    const rangeStart = addDays(startDate, -1).toISOString();
+    const rangeEnd = addDays(startDate, VISIBLE_DAYS + 1).toISOString();
 
     const [{ data: s }, { data: f }] = await Promise.all([
       supabase
@@ -92,10 +87,10 @@ export function WeekView({
     setSessions(s ?? []);
     setFeedings(f ?? []);
     setLoading(false);
-  }, [weekStart]);
+  }, [startDate]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- refetch when week changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- refetch when the window changes
     load();
   }, [load]);
 
@@ -106,7 +101,7 @@ export function WeekView({
     setTapPrompt({ day, minutes: snapMinutes(minutes) });
   }
 
-  const weekDayKeys = new Set(days.map((d) => format(d, "yyyy-MM-dd")));
+  const visibleDayKeys = new Set(days.map((d) => format(d, "yyyy-MM-dd")));
 
   const segmentsByDay = new Map<
     string,
@@ -114,7 +109,7 @@ export function WeekView({
   >();
   for (const session of sessions) {
     for (const seg of splitIntervalByDay(session.started_at, session.ended_at)) {
-      if (!weekDayKeys.has(seg.day)) continue;
+      if (!visibleDayKeys.has(seg.day)) continue;
       const list = segmentsByDay.get(seg.day) ?? [];
       list.push({ session, startMinutes: seg.startMinutes, endMinutes: seg.endMinutes });
       segmentsByDay.set(seg.day, list);
@@ -124,7 +119,7 @@ export function WeekView({
   const feedingsByDay = new Map<string, Feeding[]>();
   for (const feeding of feedings) {
     const key = format(new Date(feeding.occurred_at), "yyyy-MM-dd");
-    if (!weekDayKeys.has(key)) continue;
+    if (!visibleDayKeys.has(key)) continue;
     const list = feedingsByDay.get(key) ?? [];
     list.push(feeding);
     feedingsByDay.set(key, list);
@@ -132,151 +127,149 @@ export function WeekView({
 
   return (
     <div className={`isolate ${loading ? "opacity-50" : ""}`}>
-      <div className="overflow-x-auto">
-        <div className="flex sm:min-w-[720px]">
-          <div className="w-14 shrink-0" />
-          {days.map((day) => (
-            <button
-              key={day.toISOString()}
-              onClick={() => onSelectDay(format(day, "yyyy-MM-dd"))}
-              className={`${DAY_COLUMN_CLASS} rounded-xl py-2 text-center text-xs font-medium hover:bg-neutral-100 dark:hover:bg-neutral-900 ${
-                isToday(day) ? "text-accent" : "text-neutral-400"
-              }`}
+      <div className="flex">
+        <div className="w-14 shrink-0" />
+        {days.map((day) => (
+          <button
+            key={day.toISOString()}
+            onClick={() => onSelectDay(format(day, "yyyy-MM-dd"))}
+            className={`flex-1 rounded-xl py-2 text-center text-xs font-medium hover:bg-neutral-100 dark:hover:bg-neutral-900 ${
+              isToday(day) ? "text-accent" : "text-neutral-400"
+            }`}
+          >
+            <div>{format(day, "EEE")}</div>
+            <div className="text-base">{format(day, "d")}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex">
+        <div className="relative w-14 shrink-0" style={{ height: DAY_HEIGHT }}>
+          {HOUR_LABELS.map((hour) => (
+            <div
+              key={hour}
+              className="absolute right-2 -translate-y-1/2 text-[10px] text-neutral-400"
+              style={{ top: pct(hour * 60) }}
             >
-              <div>{format(day, "EEE")}</div>
-              <div className="text-base">{format(day, "d")}</div>
-            </button>
+              {formatHourLabel(hour)}
+            </div>
           ))}
         </div>
 
-        <div className="flex sm:min-w-[720px]">
-          <div className="relative w-14 shrink-0" style={{ height: DAY_HEIGHT }}>
-            {HOUR_LABELS.map((hour) => (
-              <div
-                key={hour}
-                className="absolute right-2 -translate-y-1/2 text-[10px] text-neutral-400"
-                style={{ top: pct(hour * 60) }}
-              >
-                {formatHourLabel(hour)}
-              </div>
-            ))}
-          </div>
+        {days.map((day) => {
+          const key = format(day, "yyyy-MM-dd");
+          const segments = segmentsByDay.get(key) ?? [];
+          const dayFeedings = feedingsByDay.get(key) ?? [];
+          const feedingColumnBottoms: number[] = [];
+          const feedingLayout = [...dayFeedings]
+            .sort(
+              (a, b) => minutesSinceMidnight(a.occurred_at) - minutesSinceMidnight(b.occurred_at),
+            )
+            .map((feeding) => {
+              const top = pct(minutesSinceMidnight(feeding.occurred_at));
+              let column = feedingColumnBottoms.findIndex((bottom) => top >= bottom);
+              if (column === -1) column = feedingColumnBottoms.length;
+              feedingColumnBottoms[column] = top + FEEDING_MIN_GAP_PX;
+              return { feeding, top, column };
+            });
 
-          {days.map((day) => {
-            const key = format(day, "yyyy-MM-dd");
-            const segments = segmentsByDay.get(key) ?? [];
-            const dayFeedings = feedingsByDay.get(key) ?? [];
-            const feedingColumnBottoms: number[] = [];
-            const feedingLayout = [...dayFeedings]
-              .sort(
-                (a, b) => minutesSinceMidnight(a.occurred_at) - minutesSinceMidnight(b.occurred_at),
-              )
-              .map((feeding) => {
-                const top = pct(minutesSinceMidnight(feeding.occurred_at));
-                let column = feedingColumnBottoms.findIndex((bottom) => top >= bottom);
-                if (column === -1) column = feedingColumnBottoms.length;
-                feedingColumnBottoms[column] = top + FEEDING_MIN_GAP_PX;
-                return { feeding, top, column };
-              });
+          return (
+            <div
+              key={key}
+              className="relative flex-1 border-l border-neutral-100 dark:border-neutral-900"
+              style={{ height: DAY_HEIGHT }}
+              onClick={(e) => handleColumnClick(e, key)}
+            >
+              {HOUR_LABELS.map((hour) => (
+                <div
+                  key={hour}
+                  className="absolute inset-x-0 border-t border-neutral-100 dark:border-neutral-900"
+                  style={{ top: pct(hour * 60) }}
+                />
+              ))}
 
-            return (
-              <div
-                key={key}
-                className={`${DAY_COLUMN_CLASS} relative border-l border-neutral-100 dark:border-neutral-900`}
-                style={{ height: DAY_HEIGHT }}
-                onClick={(e) => handleColumnClick(e, key)}
-              >
-                {HOUR_LABELS.map((hour) => (
-                  <div
-                    key={hour}
-                    className="absolute inset-x-0 border-t border-neutral-100 dark:border-neutral-900"
-                    style={{ top: pct(hour * 60) }}
-                  />
-                ))}
-
-                {segments.map(({ session, startMinutes, endMinutes }, i) => {
-                  const ongoing = !session.ended_at;
-                  const top = pct(startMinutes);
-                  const duration = endMinutes - startMinutes;
-                  const height = Math.max(pct(duration), 6);
-                  return (
-                    <button
-                      key={`${session.id}-${i}`}
-                      onClick={() => onSelectSession(session)}
-                      title={`${session.is_night_sleep ? "Night sleep" : "Nap"} · ${formatDuration(duration)}`}
-                      className={`absolute inset-x-0.5 overflow-hidden rounded-lg px-1 text-left text-[10px] leading-tight whitespace-nowrap text-white ${
-                        session.is_night_sleep
-                          ? "bg-slate-700"
-                          : "bg-slate-400"
-                      } ${ongoing ? "ring-2 ring-amber-300" : ""}`}
-                      style={{ top, height }}
-                    >
-                      {height > 16 &&
-                        `${session.is_night_sleep ? "🌆" : "🌙"} ${formatDuration(duration)}`}
-                    </button>
-                  );
-                })}
-
-                {feedingLayout.map(({ feeding, top, column }) => (
+              {segments.map(({ session, startMinutes, endMinutes }, i) => {
+                const ongoing = !session.ended_at;
+                const top = pct(startMinutes);
+                const duration = endMinutes - startMinutes;
+                const height = Math.max(pct(duration), 6);
+                return (
                   <button
-                    key={feeding.id}
-                    onClick={() => onSelectFeeding(feeding)}
-                    title={`${feeding.feed_type}${feeding.amount ? ` · ${feeding.amount}${feeding.unit}` : ""}`}
-                    className="absolute z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-[9px] shadow ring-2 ring-white dark:ring-neutral-950"
-                    style={{ top, right: 2 + column * FEEDING_COLUMN_WIDTH_PX }}
+                    key={`${session.id}-${i}`}
+                    onClick={() => onSelectSession(session)}
+                    title={`${session.is_night_sleep ? "Night sleep" : "Nap"} · ${formatDuration(duration)}`}
+                    className={`absolute inset-x-0.5 overflow-hidden rounded-lg px-1 text-left text-[10px] leading-tight whitespace-nowrap text-white ${
+                      session.is_night_sleep
+                        ? "bg-slate-700"
+                        : "bg-slate-400"
+                    } ${ongoing ? "ring-2 ring-amber-300" : ""}`}
+                    style={{ top, height }}
                   >
-                    {feedTypeIcon(feeding.feed_type)}
+                    {height > 16 &&
+                      `${session.is_night_sleep ? "🌆" : "🌙"} ${formatDuration(duration)}`}
                   </button>
-                ))}
+                );
+              })}
 
-                {tapPrompt && tapPrompt.day === key && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-30"
-                      onClick={(e) => {
-                        e.stopPropagation();
+              {feedingLayout.map(({ feeding, top, column }) => (
+                <button
+                  key={feeding.id}
+                  onClick={() => onSelectFeeding(feeding)}
+                  title={`${feeding.feed_type}${feeding.amount ? ` · ${feeding.amount}${feeding.unit}` : ""}`}
+                  className="absolute z-10 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-[9px] shadow ring-2 ring-white dark:ring-neutral-950"
+                  style={{ top, right: 2 + column * FEEDING_COLUMN_WIDTH_PX }}
+                >
+                  {feedTypeIcon(feeding.feed_type)}
+                </button>
+              ))}
+
+              {tapPrompt && tapPrompt.day === key && (
+                <>
+                  <div
+                    className="fixed inset-0 z-30"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTapPrompt(null);
+                    }}
+                  />
+                  <div
+                    className="absolute inset-x-0.5 z-40 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
+                    style={{ top: pct(tapPrompt.minutes) }}
+                  >
+                    <p className="mb-1 px-0.5 text-[9px] text-neutral-400">
+                      {minuteLabel(tapPrompt.minutes)}
+                    </p>
+                    <button
+                      onClick={() => {
+                        onCreateSleep(
+                          tapPrompt.day,
+                          minutesToDate(tapPrompt.day, tapPrompt.minutes),
+                          null,
+                        );
                         setTapPrompt(null);
                       }}
-                    />
-                    <div
-                      className="absolute inset-x-0.5 z-40 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
-                      style={{ top: pct(tapPrompt.minutes) }}
+                      className="mb-1 block w-full rounded-lg bg-slate-700 px-1.5 py-1 text-left text-[10px] font-medium whitespace-nowrap text-white"
                     >
-                      <p className="mb-1 px-0.5 text-[9px] text-neutral-400">
-                        {minuteLabel(tapPrompt.minutes)}
-                      </p>
-                      <button
-                        onClick={() => {
-                          onCreateSleep(
-                            tapPrompt.day,
-                            minutesToDate(tapPrompt.day, tapPrompt.minutes),
-                            null,
-                          );
-                          setTapPrompt(null);
-                        }}
-                        className="mb-1 block w-full rounded-lg bg-slate-700 px-1.5 py-1 text-left text-[10px] font-medium whitespace-nowrap text-white"
-                      >
-                        😴 Log sleep
-                      </button>
-                      <button
-                        onClick={() => {
-                          onCreateFeeding(
-                            tapPrompt.day,
-                            minutesToDate(tapPrompt.day, tapPrompt.minutes),
-                          );
-                          setTapPrompt(null);
-                        }}
-                        className="block w-full rounded-lg bg-accent px-1.5 py-1 text-left text-[10px] font-medium whitespace-nowrap text-white"
-                      >
-                        🍼 Log feeding
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                      😴 Log sleep
+                    </button>
+                    <button
+                      onClick={() => {
+                        onCreateFeeding(
+                          tapPrompt.day,
+                          minutesToDate(tapPrompt.day, tapPrompt.minutes),
+                        );
+                        setTapPrompt(null);
+                      }}
+                      className="block w-full rounded-lg bg-accent px-1.5 py-1 text-left text-[10px] font-medium whitespace-nowrap text-white"
+                    >
+                      🍼 Log feeding
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-3 flex items-center gap-4 text-xs text-neutral-400">
