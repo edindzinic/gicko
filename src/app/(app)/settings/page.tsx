@@ -248,22 +248,26 @@ export default function SettingsPage() {
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
           From
         </label>
-        <input
-          type="date"
-          value={from}
-          onChange={(e) => setFrom(e.target.value)}
-          className="mb-4 w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
-        />
+        <div className="mb-4 w-full overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="w-full min-w-0 px-3 py-2.5 text-base dark:bg-neutral-900"
+          />
+        </div>
 
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
           To
         </label>
-        <input
-          type="date"
-          value={to}
-          onChange={(e) => setTo(e.target.value)}
-          className="mb-6 w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
-        />
+        <div className="mb-6 w-full overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="w-full min-w-0 px-3 py-2.5 text-base dark:bg-neutral-900"
+          />
+        </div>
 
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 

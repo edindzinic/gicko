@@ -147,29 +147,22 @@ export function FeedingModal({
           ))}
         </div>
 
+        <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+          Occurred at
+        </label>
         <div className="mb-4 flex gap-2">
-          <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Date
-            </label>
-            <input
-              type="date"
-              value={occurredDate}
-              onChange={(e) => setOccurredDate(e.target.value)}
-              className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Time
-            </label>
-            <input
-              type="time"
-              value={occurredTime}
-              onChange={(e) => setOccurredTime(e.target.value)}
-              className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
-            />
-          </div>
+          <input
+            type="date"
+            value={occurredDate}
+            onChange={(e) => setOccurredDate(e.target.value)}
+            className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
+          />
+          <input
+            type="time"
+            value={occurredTime}
+            onChange={(e) => setOccurredTime(e.target.value)}
+            className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
+          />
         </div>
 
         {needsAmount && (
