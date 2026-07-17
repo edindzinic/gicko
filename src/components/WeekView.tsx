@@ -13,7 +13,6 @@ const HOUR_LABELS = [0, 3, 6, 9, 12, 15, 18, 21];
 const SNAP_MINUTES = 5;
 const FEEDING_MIN_GAP_PX = 16; // min vertical gap before two feeding badges would overlap
 const FEEDING_COLUMN_WIDTH_PX = 18;
-export const VISIBLE_DAYS = 3;
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
@@ -42,6 +41,7 @@ function minutesToDate(day: string, minutes: number) {
 
 export function WeekView({
   startDate,
+  visibleDays,
   onSelectSession,
   onSelectFeeding,
   onSelectDay,
@@ -49,6 +49,8 @@ export function WeekView({
   onCreateFeeding,
 }: {
   startDate: Date;
+  /** Number of day columns to render (e.g. 3 on mobile, 7 on desktop). */
+  visibleDays: number;
   onSelectSession: (session: SleepSession) => void;
   onSelectFeeding: (feeding: Feeding) => void;
   onSelectDay: (day: string) => void;
@@ -60,7 +62,7 @@ export function WeekView({
   const [loading, setLoading] = useState(true);
   const [tapPrompt, setTapPrompt] = useState<{ day: string; minutes: number } | null>(null);
 
-  const days = eachDayOfInterval({ start: startDate, end: addDays(startDate, VISIBLE_DAYS - 1) });
+  const days = eachDayOfInterval({ start: startDate, end: addDays(startDate, visibleDays - 1) });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,7 +70,7 @@ export function WeekView({
     // Buffer a day on each side so overnight sessions spanning the window's
     // edges still show up (and get clipped to this window by splitIntervalByDay).
     const rangeStart = addDays(startDate, -1).toISOString();
-    const rangeEnd = addDays(startDate, VISIBLE_DAYS + 1).toISOString();
+    const rangeEnd = addDays(startDate, visibleDays + 1).toISOString();
 
     const [{ data: s }, { data: f }] = await Promise.all([
       supabase
@@ -87,7 +89,7 @@ export function WeekView({
     setSessions(s ?? []);
     setFeedings(f ?? []);
     setLoading(false);
-  }, [startDate]);
+  }, [startDate, visibleDays]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- refetch when the window changes

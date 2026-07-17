@@ -22,7 +22,7 @@ import type { Tables } from "@/lib/database.types";
 import { DayDetailPanel } from "@/components/DayDetailPanel";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
-import { VISIBLE_DAYS, WeekView } from "@/components/WeekView";
+import { WeekView } from "@/components/WeekView";
 import { findNightWakeUpEndTimes, formatDuration, sessionDurationMinutes } from "@/lib/time";
 import { FEED_TYPE_ICONS } from "@/lib/feedingTypes";
 
@@ -49,6 +49,23 @@ export default function CalendarPage() {
   const [creatingFeeding, setCreatingFeeding] = useState<{ at: Date } | null>(null);
   const [loading, setLoading] = useState(true);
   const [weekRefreshKey, setWeekRefreshKey] = useState(0);
+  // Matches Tailwind's `sm` breakpoint, used elsewhere in this app for mobile/desktop layout switches.
+  const [isDesktop, setIsDesktop] = useState(false);
+  const visibleDays = isDesktop ? 7 : 3;
+
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 640px)");
+    if (mql.matches) {
+      // Correct the initial default (assumed mobile, for SSR) in one shot, aligning
+      // to the Monday-started week rather than leaving the "today" mobile default.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time correction of the SSR-safe default, not a later navigation reset
+      setIsDesktop(true);
+      setDaysViewStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+    }
+    const handleChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mql.addEventListener("change", handleChange);
+    return () => mql.removeEventListener("change", handleChange);
+  }, []);
 
   const gridStart = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
   const gridEnd = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
@@ -133,7 +150,7 @@ export default function CalendarPage() {
         <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
           {view === "month"
             ? format(month, "MMMM yyyy")
-            : `${format(daysViewStart, "MMM d")} – ${format(addDays(daysViewStart, VISIBLE_DAYS - 1), "MMM d")}`}
+            : `${format(daysViewStart, "MMM d")} – ${format(addDays(daysViewStart, visibleDays - 1), "MMM d")}`}
         </h1>
         <div className="flex items-center gap-3">
           <div className="flex rounded-2xl border border-neutral-200 p-0.5 text-sm dark:border-neutral-800">
@@ -159,7 +176,7 @@ export default function CalendarPage() {
               onClick={() =>
                 view === "month"
                   ? setMonth((m) => subMonths(m, 1))
-                  : setDaysViewStart((d) => subDays(d, VISIBLE_DAYS))
+                  : setDaysViewStart((d) => subDays(d, visibleDays))
               }
               aria-label="Previous"
               className="flex h-9 w-9 items-center justify-center rounded-2xl border border-neutral-200 text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
@@ -170,7 +187,11 @@ export default function CalendarPage() {
               onClick={() =>
                 view === "month"
                   ? setMonth(startOfMonth(new Date()))
-                  : setDaysViewStart(startOfDay(new Date()))
+                  : setDaysViewStart(
+                      isDesktop
+                        ? startOfWeek(new Date(), { weekStartsOn: 1 })
+                        : startOfDay(new Date()),
+                    )
               }
               className="rounded-2xl border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
             >
@@ -180,7 +201,7 @@ export default function CalendarPage() {
               onClick={() =>
                 view === "month"
                   ? setMonth((m) => addMonths(m, 1))
-                  : setDaysViewStart((d) => addDays(d, VISIBLE_DAYS))
+                  : setDaysViewStart((d) => addDays(d, visibleDays))
               }
               aria-label="Next"
               className="flex h-9 w-9 items-center justify-center rounded-2xl border border-neutral-200 text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
@@ -235,6 +256,7 @@ export default function CalendarPage() {
         <WeekView
           key={weekRefreshKey}
           startDate={daysViewStart}
+          visibleDays={visibleDays}
           onSelectDay={setSelectedDay}
           onSelectSession={setEditingSession}
           onSelectFeeding={setEditingFeeding}
