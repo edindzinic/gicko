@@ -148,7 +148,9 @@ export function DayTimeline({
         </div>
 
         <div
-          className="relative flex-1 touch-none border-l border-neutral-100 dark:border-neutral-900"
+          className={`relative flex-1 border-l border-neutral-100 dark:border-neutral-900 ${
+            allowDragCreate ? "touch-none" : ""
+          }`}
           style={{ height: DAY_HEIGHT }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
