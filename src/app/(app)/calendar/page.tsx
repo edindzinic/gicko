@@ -26,6 +26,9 @@ import { WeekView } from "@/components/WeekView";
 import { findNightWakeUpEndTimes, formatDuration, sessionDurationMinutes } from "@/lib/time";
 import { FEED_TYPE_ICONS } from "@/lib/feedingTypes";
 
+const MOBILE_VISIBLE_DAYS = 3;
+const DESKTOP_VISIBLE_DAYS = 7;
+
 type DayStats = {
   sleepMinutes: number;
   feedingCount: number;
@@ -36,7 +39,10 @@ type DayStats = {
 export default function CalendarPage() {
   const [view, setView] = useState<"month" | "week">("week");
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
-  const [daysViewStart, setDaysViewStart] = useState(() => startOfDay(new Date()));
+  // Mobile shows today as the last of the 3 visible days, so start 2 days back.
+  const [daysViewStart, setDaysViewStart] = useState(() =>
+    subDays(startOfDay(new Date()), MOBILE_VISIBLE_DAYS - 1),
+  );
   const [sessions, setSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [feedings, setFeedings] = useState<Tables<"feedings">[]>([]);
   const [nightSessions, setNightSessions] = useState<Tables<"sleep_sessions">[]>([]);
@@ -51,7 +57,7 @@ export default function CalendarPage() {
   const [weekRefreshKey, setWeekRefreshKey] = useState(0);
   // Matches Tailwind's `sm` breakpoint, used elsewhere in this app for mobile/desktop layout switches.
   const [isDesktop, setIsDesktop] = useState(false);
-  const visibleDays = isDesktop ? 7 : 3;
+  const visibleDays = isDesktop ? DESKTOP_VISIBLE_DAYS : MOBILE_VISIBLE_DAYS;
 
   useEffect(() => {
     const mql = window.matchMedia("(min-width: 640px)");
@@ -190,7 +196,7 @@ export default function CalendarPage() {
                   : setDaysViewStart(
                       isDesktop
                         ? startOfWeek(new Date(), { weekStartsOn: 1 })
-                        : startOfDay(new Date()),
+                        : subDays(startOfDay(new Date()), MOBILE_VISIBLE_DAYS - 1),
                     )
               }
               className="rounded-2xl border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
