@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, startOfMonth } from "date-fns";
-import { Apple, Download, LogOut, Palette, Trash2, User } from "lucide-react";
+import { Apple, Download, Globe, LogOut, Palette, Trash2, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { findNightWakeUpEndTimes, formatDuration, isNightTime, sessionDurationMinutes } from "@/lib/time";
 
 function toInputValue(date: Date) {
@@ -15,6 +17,7 @@ function toInputValue(date: Date) {
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [from, setFrom] = useState(toInputValue(startOfMonth(new Date())));
   const [to, setTo] = useState(toInputValue(new Date()));
@@ -67,7 +70,7 @@ export default function SettingsPage() {
 
     if (insertError) {
       setFoodError(
-        insertError.code === "23505" ? "That food is already on the list." : "Couldn't add that food.",
+        insertError.code === "23505" ? t.settings.foodAlreadyExists : t.settings.foodAddError,
       );
       return;
     }
@@ -116,7 +119,7 @@ export default function SettingsPage() {
         ]);
 
       if (sErr || fErr) {
-        setError("Couldn't fetch data for export.");
+        setError(t.settings.exportError);
         setExporting(false);
         return;
       }
@@ -164,34 +167,41 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-6 sm:py-10">
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">Settings</h1>
+      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">{t.settings.title}</h1>
 
       <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
-          <User className="h-4 w-4" strokeWidth={2} /> Account
+          <User className="h-4 w-4" strokeWidth={2} /> {t.settings.account}
         </h2>
         <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-300">
-          Signed in as <span className="font-medium">{displayName ?? "…"}</span>
+          {t.settings.signedInAs(displayName ?? "…")}
         </p>
         <button
           onClick={signOut}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 py-3 text-base font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-900"
         >
           <LogOut className="h-4 w-4" strokeWidth={2} />
-          Sign out
+          {t.settings.signOut}
         </button>
       </div>
 
       <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
-          <Palette className="h-4 w-4" strokeWidth={2} /> Appearance
+          <Palette className="h-4 w-4" strokeWidth={2} /> {t.settings.appearance}
         </h2>
         <ThemeToggle />
       </div>
 
       <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
-          <Apple className="h-4 w-4" strokeWidth={2} /> Solid foods
+          <Globe className="h-4 w-4" strokeWidth={2} /> {t.settings.language}
+        </h2>
+        <LanguageToggle />
+      </div>
+
+      <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
+          <Apple className="h-4 w-4" strokeWidth={2} /> {t.settings.solidFoods}
         </h2>
 
         {solidFoods.length > 0 && (
@@ -204,7 +214,7 @@ export default function SettingsPage() {
                 <span className="text-neutral-700 dark:text-neutral-300">{food.name}</span>
                 <button
                   onClick={() => deleteSolidFood(food.id)}
-                  aria-label={`Remove ${food.name}`}
+                  aria-label={t.settings.removeFoodAria(food.name)}
                   className="text-neutral-400 hover:text-red-600"
                 >
                   <Trash2 className="h-4 w-4" strokeWidth={1.75} />
@@ -222,7 +232,7 @@ export default function SettingsPage() {
             onKeyDown={(e) => {
               if (e.key === "Enter") addSolidFood();
             }}
-            placeholder="e.g. Banana"
+            placeholder={t.settings.foodPlaceholder}
             className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
           />
           <button
@@ -230,23 +240,21 @@ export default function SettingsPage() {
             disabled={addingFood || !newFoodName.trim()}
             className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
           >
-            Add
+            {t.settings.add}
           </button>
         </div>
         {foodError && <p className="mt-2 text-sm text-red-600">{foodError}</p>}
 
-        <p className="mt-4 text-xs text-neutral-400">
-          These show up as options when logging a solid feeding.
-        </p>
+        <p className="mt-4 text-xs text-neutral-400">{t.settings.solidFoodsHint}</p>
       </div>
 
       <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
-          <Download className="h-4 w-4" strokeWidth={2} /> Export data
+          <Download className="h-4 w-4" strokeWidth={2} /> {t.settings.exportData}
         </h2>
 
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          From
+          {t.settings.from}
         </label>
         <div className="mb-4 w-full overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
           <input
@@ -258,7 +266,7 @@ export default function SettingsPage() {
         </div>
 
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          To
+          {t.settings.to}
         </label>
         <div className="mb-6 w-full overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
           <input
@@ -277,12 +285,10 @@ export default function SettingsPage() {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-base font-medium text-white hover:brightness-110 disabled:opacity-50"
         >
           <Download className="h-4 w-4" strokeWidth={2} />
-          {exporting ? "Preparing…" : "Export to Excel"}
+          {exporting ? t.settings.preparing : t.settings.exportToExcel}
         </button>
 
-        <p className="mt-4 text-center text-xs text-neutral-400">
-          Downloads an .xlsx with separate Sleep and Feedings sheets for the selected range.
-        </p>
+        <p className="mt-4 text-center text-xs text-neutral-400">{t.settings.exportHint}</p>
       </div>
     </div>
   );

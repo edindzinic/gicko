@@ -8,6 +8,7 @@ import type { Tables } from "@/lib/database.types";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
 import { DayTimeline } from "@/components/DayTimeline";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function DayDetailPanel({
   day,
@@ -18,6 +19,7 @@ export function DayDetailPanel({
   onClose: () => void;
   onEventsChanged?: () => void;
 }) {
+  const { t } = useLanguage();
   const [sessions, setSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [feedings, setFeedings] = useState<Tables<"feedings">[]>([]);
   const [note, setNote] = useState("");
@@ -105,7 +107,7 @@ export function DayDetailPanel({
         </div>
 
         {loading ? (
-          <p className="py-8 text-center text-sm text-neutral-400">Loading…</p>
+          <p className="py-8 text-center text-sm text-neutral-400">{t.common.loading}</p>
         ) : (
           <>
             <div className="mb-4 flex gap-2">
@@ -113,13 +115,13 @@ export function DayDetailPanel({
                 onClick={() => setAddingSleep({})}
                 className="flex-1 rounded-xl border-2 border-accent py-2.5 text-sm font-semibold text-accent active:scale-[0.98]"
               >
-                😴 Log sleep
+                {t.actions.logSleep}
               </button>
               <button
                 onClick={() => setAddingFeeding({})}
                 className="flex-1 rounded-xl border-2 border-accent py-2.5 text-sm font-semibold text-accent active:scale-[0.98]"
               >
-                🍼 Log feeding
+                {t.actions.logFeeding}
               </button>
             </div>
 
@@ -137,17 +139,17 @@ export function DayDetailPanel({
             </div>
 
             <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Note
+              {t.dayDetail.note}
             </label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               onBlur={saveNote}
               rows={3}
-              placeholder="Anything worth remembering about this day…"
+              placeholder={t.dayDetail.notePlaceholder}
               className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
             />
-            {savingNote && <p className="mt-1 text-xs text-neutral-400">Saving…</p>}
+            {savingNote && <p className="mt-1 text-xs text-neutral-400">{t.common.saving}</p>}
           </>
         )}
       </div>

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function ThemeToggle() {
+  const { t } = useLanguage();
   const [theme, setTheme] = useState<"light" | "dark">("dark");
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export function ThemeToggle() {
             : "text-neutral-500 dark:text-neutral-400"
         }`}
       >
-        <Sun className="h-4 w-4" strokeWidth={2} /> Light
+        <Sun className="h-4 w-4" strokeWidth={2} /> {t.settings.light}
       </button>
       <button
         onClick={() => apply("dark")}
@@ -37,7 +39,7 @@ export function ThemeToggle() {
             : "text-neutral-500 dark:text-neutral-400"
         }`}
       >
-        <Moon className="h-4 w-4" strokeWidth={2} /> Dark
+        <Moon className="h-4 w-4" strokeWidth={2} /> {t.settings.dark}
       </button>
     </div>
   );

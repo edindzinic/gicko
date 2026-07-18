@@ -6,13 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Tables, TablesInsert } from "@/lib/database.types";
 import { combineDateAndTime, toDateInputValue, toTimeInputValue } from "@/lib/time";
 import { FEED_TYPE_ICONS, type FeedType } from "@/lib/feedingTypes";
-
-const FEED_TYPES: { value: FeedType; label: string; icon: string }[] = [
-  { value: "bottle", label: "Bottle", icon: FEED_TYPE_ICONS.bottle },
-  { value: "breast", label: "Breast", icon: FEED_TYPE_ICONS.breast },
-  { value: "formula", label: "Formula", icon: FEED_TYPE_ICONS.formula },
-  { value: "solid", label: "Solid", icon: FEED_TYPE_ICONS.solid },
-];
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function FeedingModal({
   feeding,
@@ -30,6 +24,13 @@ export function FeedingModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useLanguage();
+  const FEED_TYPES: { value: FeedType; label: string; icon: string }[] = [
+    { value: "bottle", label: t.feedTypes.bottle, icon: FEED_TYPE_ICONS.bottle },
+    { value: "breast", label: t.feedTypes.breast, icon: FEED_TYPE_ICONS.breast },
+    { value: "formula", label: t.feedTypes.formula, icon: FEED_TYPE_ICONS.formula },
+    { value: "solid", label: t.feedTypes.solid, icon: FEED_TYPE_ICONS.solid },
+  ];
   const isEditing = !!feeding;
   const now = new Date();
   const initialDateTime =
@@ -92,7 +93,7 @@ export function FeedingModal({
 
     setSaving(false);
     if (saveError) {
-      setError("Couldn't save the feeding. Try again.");
+      setError(t.feedingModal.errorSave);
       return;
     }
     onSaved();
@@ -108,7 +109,7 @@ export function FeedingModal({
       .eq("id", feeding.id);
     setDeleting(false);
     if (deleteError) {
-      setError("Couldn't delete the feeding. Try again.");
+      setError(t.feedingModal.errorDelete);
       return;
     }
     onSaved();
@@ -127,28 +128,28 @@ export function FeedingModal({
         className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-neutral-950"
       >
         <h2 className="mb-4 text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-          {isEditing ? "Edit feeding" : "Log a feeding"}
+          {isEditing ? t.feedingModal.editTitle : t.feedingModal.logTitle}
         </h2>
 
         <div className="mb-4 grid grid-cols-4 gap-2">
-          {FEED_TYPES.map((t) => (
+          {FEED_TYPES.map((feedTypeOption) => (
             <button
-              key={t.value}
-              onClick={() => setFeedType(t.value)}
+              key={feedTypeOption.value}
+              onClick={() => setFeedType(feedTypeOption.value)}
               className={`flex flex-col items-center gap-1 rounded-xl border py-3 text-xs font-medium transition ${
-                feedType === t.value
+                feedType === feedTypeOption.value
                   ? "border-accent bg-accent/10 text-accent"
                   : "border-neutral-200 text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
               }`}
             >
-              <span className="text-xl">{t.icon}</span>
-              {t.label}
+              <span className="text-xl">{feedTypeOption.icon}</span>
+              {feedTypeOption.label}
             </button>
           ))}
         </div>
 
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Occurred at
+          {t.feedingModal.occurredAt}
         </label>
         <div className="mb-4 flex gap-2">
           <input
@@ -169,7 +170,7 @@ export function FeedingModal({
           <div className="mb-4 flex gap-2">
             <div className="flex-1">
               <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Amount
+                {t.feedingModal.amount}
               </label>
               <input
                 type="number"
@@ -178,13 +179,13 @@ export function FeedingModal({
                 step="0.5"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="e.g. 120"
+                placeholder={t.feedingModal.amountPlaceholder}
                 className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
               />
             </div>
             <div className="w-24">
               <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Unit
+                {t.feedingModal.unit}
               </label>
               <select
                 value={unit}
@@ -201,14 +202,14 @@ export function FeedingModal({
         {feedType === "solid" && (
           <div className="mb-4">
             <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Food
+              {t.feedingModal.food}
             </label>
             <select
               value={solidFoodId ?? ""}
               onChange={(e) => setSolidFoodId(e.target.value || null)}
               className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
             >
-              <option value="">None</option>
+              <option value="">{t.common.none}</option>
               {solidFoods.map((food) => (
                 <option key={food.id} value={food.id}>
                   {food.name}
@@ -217,9 +218,9 @@ export function FeedingModal({
             </select>
             {solidFoods.length === 0 && (
               <p className="mt-1 text-xs text-neutral-400">
-                No solid foods yet —{" "}
+                {t.feedingModal.noSolidFoodsHint}
                 <Link href="/settings" className="underline">
-                  add some in Settings
+                  {t.feedingModal.addInSettings}
                 </Link>
                 .
               </p>
@@ -228,7 +229,7 @@ export function FeedingModal({
         )}
 
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Notes (optional)
+          {t.common.notesOptional}
         </label>
         <textarea
           value={notes}
@@ -244,14 +245,14 @@ export function FeedingModal({
             onClick={onClose}
             className="flex-1 rounded-xl border border-neutral-200 py-3 text-base font-medium text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
           >
-            Cancel
+            {t.common.cancel}
           </button>
           <button
             onClick={handleSave}
             disabled={saving || deleting}
             className="flex-1 rounded-xl bg-accent py-3 text-base font-medium text-white hover:brightness-110 disabled:opacity-50"
           >
-            {saving ? "Saving…" : "Save"}
+            {saving ? t.common.saving : t.common.save}
           </button>
         </div>
 
@@ -259,19 +260,19 @@ export function FeedingModal({
           <div className="mt-3">
             {confirmingDelete ? (
               <div className="flex items-center justify-center gap-2 text-sm">
-                <span className="text-neutral-500">Delete this feeding?</span>
+                <span className="text-neutral-500">{t.feedingModal.deleteConfirmQuestion}</span>
                 <button
                   onClick={() => setConfirmingDelete(false)}
                   className="rounded-lg px-2 py-1 text-neutral-500"
                 >
-                  No
+                  {t.common.no}
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
                   className="rounded-lg bg-red-600 px-3 py-1 font-medium text-white disabled:opacity-50"
                 >
-                  {deleting ? "Deleting…" : "Yes, delete"}
+                  {deleting ? t.feedingModal.deleting : t.common.yesDelete}
                 </button>
               </div>
             ) : (
@@ -279,7 +280,7 @@ export function FeedingModal({
                 onClick={() => setConfirmingDelete(true)}
                 className="w-full py-1 text-center text-sm text-red-600"
               >
-                Delete feeding
+                {t.feedingModal.deleteFeeding}
               </button>
             )}
           </div>

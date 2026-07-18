@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +26,7 @@ export default function LoginPage() {
     );
 
     if (lookupError || !email) {
-      setError("Incorrect username or password.");
+      setError(t.login.incorrectCredentials);
       setLoading(false);
       return;
     }
@@ -35,7 +37,7 @@ export default function LoginPage() {
     });
 
     if (signInError) {
-      setError("Incorrect username or password.");
+      setError(t.login.incorrectCredentials);
       setLoading(false);
       return;
     }
@@ -53,13 +55,13 @@ export default function LoginPage() {
         <div className="mb-7 text-center">
           <div className="mb-3 text-4xl">🍼</div>
           <h1 className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-            Gicko
+            {t.login.heading}
           </h1>
-          <p className="text-sm text-neutral-500">Sign in to keep tracking</p>
+          <p className="text-sm text-neutral-500">{t.login.subheading}</p>
         </div>
 
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Username
+          {t.login.username}
         </label>
         <input
           type="text"
@@ -73,7 +75,7 @@ export default function LoginPage() {
         />
 
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Password
+          {t.login.password}
         </label>
         <input
           type="password"
@@ -95,12 +97,10 @@ export default function LoginPage() {
           disabled={loading}
           className="w-full rounded-xl bg-accent py-3 text-base font-medium text-white transition hover:brightness-110 disabled:opacity-50"
         >
-          {loading ? "Signing in…" : "Sign in"}
+          {loading ? t.login.signingIn : t.login.signIn}
         </button>
 
-        <p className="mt-4 text-center text-xs text-neutral-400">
-          You&apos;ll stay signed in on this device.
-        </p>
+        <p className="mt-4 text-center text-xs text-neutral-400">{t.login.staySignedIn}</p>
       </form>
     </div>
   );

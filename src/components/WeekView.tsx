@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { formatDuration, formatHourLabel, minutesSinceMidnight, splitIntervalByDay } from "@/lib/time";
 import { feedTypeIcon } from "@/lib/feedingTypes";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const HOUR_HEIGHT = 32; // px per hour
 const DAY_HEIGHT = HOUR_HEIGHT * 24;
@@ -57,6 +58,7 @@ export function WeekView({
   onCreateSleep: (day: string, start: Date, end: Date | null) => void;
   onCreateFeeding: (day: string, at: Date) => void;
 }) {
+  const { t } = useLanguage();
   const [sessions, setSessions] = useState<SleepSession[]>([]);
   const [feedings, setFeedings] = useState<Feeding[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,7 +201,7 @@ export function WeekView({
                   <button
                     key={`${session.id}-${i}`}
                     onClick={() => onSelectSession(session)}
-                    title={`${session.is_night_sleep ? "Night sleep" : "Nap"} · ${formatDuration(duration)}`}
+                    title={`${session.is_night_sleep ? t.timelineView.nightSleep : t.timelineView.nap} · ${formatDuration(duration)}`}
                     className={`absolute inset-x-0.5 overflow-hidden rounded-lg px-1 text-left text-[10px] leading-tight whitespace-nowrap text-white ${
                       session.is_night_sleep
                         ? "bg-slate-700"
@@ -252,7 +254,7 @@ export function WeekView({
                       }}
                       className="mb-1 block w-full rounded-lg bg-slate-700 px-1.5 py-1 text-left text-[10px] font-medium whitespace-nowrap text-white"
                     >
-                      😴 Log sleep
+                      {t.actions.logSleep}
                     </button>
                     <button
                       onClick={() => {
@@ -264,7 +266,7 @@ export function WeekView({
                       }}
                       className="block w-full rounded-lg bg-accent px-1.5 py-1 text-left text-[10px] font-medium whitespace-nowrap text-white"
                     >
-                      🍼 Log feeding
+                      {t.actions.logFeeding}
                     </button>
                   </div>
                 </>
@@ -276,13 +278,13 @@ export function WeekView({
 
       <div className="mt-3 flex items-center gap-4 text-xs text-neutral-400">
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded bg-slate-700" /> Night sleep
+          <span className="h-3 w-3 rounded bg-slate-700" /> {t.timelineView.nightSleep}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded bg-slate-400" /> Nap
+          <span className="h-3 w-3 rounded bg-slate-400" /> {t.timelineView.nap}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-accent" /> Feeding
+          <span className="h-3 w-3 rounded-full bg-accent" /> {t.timelineView.feeding}
         </span>
       </div>
     </div>

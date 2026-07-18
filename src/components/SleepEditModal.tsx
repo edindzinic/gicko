@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables, TablesInsert } from "@/lib/database.types";
 import { combineDateAndTime, isNightTime, toDateInputValue, toTimeInputValue } from "@/lib/time";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function SleepEditModal({
   session,
@@ -21,6 +22,7 @@ export function SleepEditModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useLanguage();
   const isEditing = !!session;
   const now = new Date();
   const initialStart =
@@ -72,7 +74,7 @@ export function SleepEditModal({
 
     setSaving(false);
     if (saveError) {
-      setError("Couldn't save the sleep session. Try again.");
+      setError(t.sleepModal.errorSave);
       return;
     }
     onSaved();
@@ -88,7 +90,7 @@ export function SleepEditModal({
       .eq("id", session.id);
     setDeleting(false);
     if (deleteError) {
-      setError("Couldn't delete the sleep session. Try again.");
+      setError(t.sleepModal.errorDelete);
       return;
     }
     onSaved();
@@ -107,11 +109,11 @@ export function SleepEditModal({
         className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-neutral-950"
       >
         <h2 className="mb-4 text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-          {isEditing ? "Edit sleep" : "Log sleep"}
+          {isEditing ? t.sleepModal.editTitle : t.sleepModal.logTitle}
         </h2>
 
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Started at
+          {t.sleepModal.startedAt}
         </label>
         <div className="mb-4 flex gap-2">
           <input
@@ -129,7 +131,7 @@ export function SleepEditModal({
         </div>
 
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Ended at
+          {t.sleepModal.endedAt}
         </label>
         <div className="mb-1 flex gap-2">
           <input
@@ -145,7 +147,7 @@ export function SleepEditModal({
             className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
           />
         </div>
-        <p className="mb-4 text-xs text-neutral-400">Leave both blank if still asleep.</p>
+        <p className="mb-4 text-xs text-neutral-400">{t.sleepModal.leaveBlankHint}</p>
 
         <label className="mb-4 flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">
           <input
@@ -154,11 +156,11 @@ export function SleepEditModal({
             onChange={(e) => setIsNightSleep(e.target.checked)}
             className="h-4 w-4 rounded border-neutral-200 accent-accent"
           />
-          🌆 This was the night sleep (not a nap)
+          {t.sleepModal.nightSleepCheckbox}
         </label>
 
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          Notes (optional)
+          {t.common.notesOptional}
         </label>
         <textarea
           value={notes}
@@ -174,14 +176,14 @@ export function SleepEditModal({
             onClick={onClose}
             className="flex-1 rounded-xl border border-neutral-200 py-3 text-base font-medium text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
           >
-            Cancel
+            {t.common.cancel}
           </button>
           <button
             onClick={handleSave}
             disabled={saving || deleting}
             className="flex-1 rounded-xl bg-accent py-3 text-base font-medium text-white hover:brightness-110 disabled:opacity-50"
           >
-            {saving ? "Saving…" : "Save"}
+            {saving ? t.common.saving : t.common.save}
           </button>
         </div>
 
@@ -189,19 +191,19 @@ export function SleepEditModal({
           <div className="mt-3">
             {confirmingDelete ? (
               <div className="flex items-center justify-center gap-2 text-sm">
-                <span className="text-neutral-500">Delete this sleep session?</span>
+                <span className="text-neutral-500">{t.sleepModal.deleteConfirmQuestion}</span>
                 <button
                   onClick={() => setConfirmingDelete(false)}
                   className="rounded-lg px-2 py-1 text-neutral-500"
                 >
-                  No
+                  {t.common.no}
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
                   className="rounded-lg bg-red-600 px-3 py-1 font-medium text-white disabled:opacity-50"
                 >
-                  {deleting ? "Deleting…" : "Yes, delete"}
+                  {deleting ? t.sleepModal.deleting : t.common.yesDelete}
                 </button>
               </div>
             ) : (
@@ -209,7 +211,7 @@ export function SleepEditModal({
                 onClick={() => setConfirmingDelete(true)}
                 className="w-full py-1 text-center text-sm text-red-600"
               >
-                Delete sleep session
+                {t.sleepModal.deleteSleepSession}
               </button>
             )}
           </div>

@@ -25,6 +25,7 @@ import { SleepEditModal } from "@/components/SleepEditModal";
 import { WeekView } from "@/components/WeekView";
 import { findNightWakeUpEndTimes, formatDuration, sessionDurationMinutes } from "@/lib/time";
 import { FEED_TYPE_ICONS } from "@/lib/feedingTypes";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const MOBILE_VISIBLE_DAYS = 3;
 const DESKTOP_VISIBLE_DAYS = 7;
@@ -37,6 +38,7 @@ type DayStats = {
 };
 
 export default function CalendarPage() {
+  const { t } = useLanguage();
   const [view, setView] = useState<"month" | "week">("week");
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   // Mobile shows today as the last of the 3 visible days, so start 2 days back.
@@ -166,7 +168,7 @@ export default function CalendarPage() {
                 view === "month" ? "bg-accent text-white" : "text-neutral-600 dark:text-neutral-300"
               }`}
             >
-              Month
+              {t.calendar.month}
             </button>
             <button
               onClick={() => setView("week")}
@@ -174,7 +176,7 @@ export default function CalendarPage() {
                 view === "week" ? "bg-accent text-white" : "text-neutral-600 dark:text-neutral-300"
               }`}
             >
-              Week
+              {t.calendar.week}
             </button>
           </div>
           <div className="flex gap-2">
@@ -184,7 +186,7 @@ export default function CalendarPage() {
                   ? setMonth((m) => subMonths(m, 1))
                   : setDaysViewStart((d) => subDays(d, visibleDays))
               }
-              aria-label="Previous"
+              aria-label={t.common.previous}
               className="flex h-9 w-9 items-center justify-center rounded-2xl border border-neutral-200 text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
             >
               <ChevronLeft className="h-4 w-4" strokeWidth={2} />
@@ -201,7 +203,7 @@ export default function CalendarPage() {
               }
               className="rounded-2xl border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
             >
-              Today
+              {t.common.today}
             </button>
             <button
               onClick={() =>
@@ -209,7 +211,7 @@ export default function CalendarPage() {
                   ? setMonth((m) => addMonths(m, 1))
                   : setDaysViewStart((d) => addDays(d, visibleDays))
               }
-              aria-label="Next"
+              aria-label={t.common.next}
               className="flex h-9 w-9 items-center justify-center rounded-2xl border border-neutral-200 text-neutral-600 dark:border-neutral-800 dark:text-neutral-300"
             >
               <ChevronRight className="h-4 w-4" strokeWidth={2} />
@@ -221,7 +223,7 @@ export default function CalendarPage() {
       {view === "month" ? (
         <>
           <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-neutral-400 sm:gap-2">
-            {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+            {t.calendar.weekdayLetters.map((d, i) => (
               <div key={i} className="py-1">
                 {d}
               </div>

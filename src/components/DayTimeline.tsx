@@ -5,6 +5,7 @@ import { addMinutes, parseISO } from "date-fns";
 import type { Tables } from "@/lib/database.types";
 import { formatDuration, formatHourLabel, minutesSinceMidnight, splitIntervalByDay } from "@/lib/time";
 import { feedTypeIcon } from "@/lib/feedingTypes";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
@@ -64,6 +65,7 @@ export function DayTimeline({
   /** Set false to disable dragging to create a sleep session with a range (tap-to-choose still works). */
   allowDragCreate?: boolean;
 }) {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -189,7 +191,7 @@ export function DayTimeline({
                 style={{ top, height }}
               >
                 <span className="text-xs font-medium">
-                  {session.is_night_sleep ? "🌆 Night sleep" : "🌙 Nap"}
+                  {session.is_night_sleep ? `🌆 ${t.timelineView.nightSleep}` : `🌙 ${t.timelineView.nap}`}
                 </span>
                 {height > 38 && (
                   <div className="text-[10px] opacity-90">
@@ -247,7 +249,7 @@ export function DayTimeline({
                     }}
                     className="flex-1 rounded-lg bg-slate-700 px-2 py-1.5 text-left text-xs font-medium whitespace-nowrap text-white"
                   >
-                    😴 Log sleep
+                    {t.actions.logSleep}
                   </button>
                   <button
                     onClick={() => {
@@ -256,7 +258,7 @@ export function DayTimeline({
                     }}
                     className="flex-1 rounded-lg bg-accent px-2 py-1.5 text-left text-xs font-medium whitespace-nowrap text-white"
                   >
-                    🍼 Log feeding
+                    {t.actions.logFeeding}
                   </button>
                 </div>
               </div>
@@ -265,7 +267,7 @@ export function DayTimeline({
 
           {isEmpty && (
             <p className="pointer-events-none absolute inset-x-0 top-24 text-center text-sm text-neutral-400">
-              Nothing logged {isToday ? "yet today" : "this day"}.
+              {t.timelineView.nothingLogged(isToday)}
             </p>
           )}
         </div>

@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Calendar, Home, Settings } from "lucide-react";
-
-const links = [
-  { href: "/", label: "Home", Icon: Home },
-  { href: "/calendar", label: "Calendar", Icon: Calendar },
-  { href: "/settings", label: "Settings", Icon: Settings },
-];
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function Nav() {
   const pathname = usePathname();
+  const { t } = useLanguage();
+
+  const links = [
+    { href: "/", label: t.nav.home, Icon: Home },
+    { href: "/calendar", label: t.nav.calendar, Icon: Calendar },
+    { href: "/settings", label: t.nav.settings, Icon: Settings },
+  ];
 
   return (
     <>

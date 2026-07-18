@@ -16,12 +16,14 @@ import {
   isNightTime,
   sessionDurationMinutes,
 } from "@/lib/time";
-import { feedTypeIcon, feedTypeLabel } from "@/lib/feedingTypes";
+import { feedTypeIcon, type FeedType } from "@/lib/feedingTypes";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
 
 export default function HomePage() {
+  const { t } = useLanguage();
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const [openSession, setOpenSession] = useState<SleepSession | null>(null);
   const [daySessions, setDaySessions] = useState<SleepSession[]>([]);
@@ -154,7 +156,7 @@ export default function HomePage() {
     .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
 
   if (loading) {
-    return <div className="p-6 text-center text-neutral-400">Loading…</div>;
+    return <div className="p-6 text-center text-neutral-400">{t.common.loading}</div>;
   }
 
   return (
@@ -162,18 +164,18 @@ export default function HomePage() {
       <div className="mb-6 flex items-center justify-between">
         <button
           onClick={() => setSelectedDate((d) => subDays(d, 1))}
-          aria-label="Previous day"
+          aria-label={t.home.previousDay}
           className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900"
         >
           <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
         </button>
         <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-          {viewingToday ? "Today" : format(selectedDate, "EEEE, MMM d")}
+          {viewingToday ? t.home.today : format(selectedDate, "EEEE, MMM d")}
         </h1>
         <button
           onClick={() => setSelectedDate((d) => addDays(d, 1))}
           disabled={viewingToday}
-          aria-label="Next day"
+          aria-label={t.home.nextDay}
           className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-neutral-900"
         >
           <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
@@ -188,7 +190,7 @@ export default function HomePage() {
               : "from-accent-soft to-accent shadow-amber-200/60 dark:shadow-black/40"
           }`}
         >
-          <p className="text-sm opacity-80">{openSession ? "Asleep since" : "Awake since"}</p>
+          <p className="text-sm opacity-80">{openSession ? t.home.asleepSince : t.home.awakeSince}</p>
           {(() => {
             const lastEndedSession = daySessions.find((s) => s.ended_at);
             const statusSession = openSession ?? lastEndedSession ?? null;
@@ -207,7 +209,7 @@ export default function HomePage() {
                 </button>
                 <p className="mb-4 text-sm font-medium opacity-90">
                   {formatDuration(Math.max(0, differenceInMinutes(now, parseISO(statusTime))))}{" "}
-                  {openSession ? "asleep" : "awake"}
+                  {openSession ? t.home.asleep : t.home.awake}
                 </p>
               </>
             ) : (
@@ -221,14 +223,14 @@ export default function HomePage() {
                 onClick={handleNightAwakening}
                 className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
               >
-                🌙 Night awakening
+                {t.home.nightAwakening}
               </button>
             ) : (
               <button
                 onClick={endSleep}
                 className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
               >
-                😴 Woke up
+                {t.home.wokeUp}
               </button>
             )
           ) : nightAwakeningPending ? (
@@ -240,13 +242,13 @@ export default function HomePage() {
                 }}
                 className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-amber-800 shadow-sm active:scale-[0.98]"
               >
-                🌙 Put back to sleep
+                {t.home.putBackToSleep}
               </button>
               <button
                 onClick={() => setNightAwakeningPending(false)}
                 className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
               >
-                ☀️ Woke up (done for the night)
+                {t.home.wokeUpDoneForNight}
               </button>
             </>
           ) : (
@@ -255,13 +257,13 @@ export default function HomePage() {
                 onClick={() => startSleep(false)}
                 className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-amber-800 shadow-sm active:scale-[0.98]"
               >
-                🌙 Put down to sleep
+                {t.home.putDownToSleep}
               </button>
               <button
                 onClick={() => startSleep(true)}
                 className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
               >
-                🌆 Start night sleep
+                {t.home.startNightSleep}
               </button>
             </>
           )}
@@ -273,7 +275,7 @@ export default function HomePage() {
           onClick={() => setFeedingModalSleepId(null)}
           className="mb-6 w-full rounded-xl border-2 border-accent py-4 text-lg font-semibold text-accent active:scale-[0.98]"
         >
-          🍼 Log a feeding
+          {t.home.logAFeeding}
         </button>
       )}
 
@@ -284,14 +286,14 @@ export default function HomePage() {
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             {formatDuration(nightSleepMinutes)}
           </p>
-          <p className="text-xs text-neutral-500">Night sleep</p>
+          <p className="text-xs text-neutral-500">{t.home.statNightSleep}</p>
         </div>
         <div className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 sm:col-span-1">
           <Sun className="mx-auto mb-1 h-4 w-4 text-accent" strokeWidth={1.75} />
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             {formatDuration(dayAwakeMinutes)}
           </p>
-          <p className="text-xs text-neutral-500">Daytime awake</p>
+          <p className="text-xs text-neutral-500">{t.home.statDaytimeAwake}</p>
         </div>
         <button
           onClick={() => setShowNapsBreakdown(true)}
@@ -301,7 +303,7 @@ export default function HomePage() {
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             {formatDuration(napMinutes)}
           </p>
-          <p className="text-xs text-neutral-500">Naps total</p>
+          <p className="text-xs text-neutral-500">{t.home.statNapsTotal}</p>
         </button>
         <button
           onClick={() => setShowFeedingsBreakdown(true)}
@@ -311,7 +313,7 @@ export default function HomePage() {
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             {dayFeedings.length}
           </p>
-          <p className="text-xs text-neutral-500">Feedings</p>
+          <p className="text-xs text-neutral-500">{t.home.statFeedings}</p>
           {totalMlToday > 0 && (
             <p className="text-[11px] text-neutral-400">{Math.round(totalMlToday)}ml</p>
           )}
@@ -324,12 +326,12 @@ export default function HomePage() {
           <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             {todayNightWakeUps.length}
           </p>
-          <p className="text-xs text-neutral-500">Night wake-ups</p>
+          <p className="text-xs text-neutral-500">{t.home.statNightWakeUps}</p>
         </button>
       </div>
 
       {/* Timeline */}
-      <h2 className="mb-2 text-sm font-semibold text-neutral-500">Timeline</h2>
+      <h2 className="mb-2 text-sm font-semibold text-neutral-500">{t.home.timeline}</h2>
       <DayTimeline
         day={dayKey}
         sessions={daySessions}
@@ -410,7 +412,7 @@ export default function HomePage() {
           >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-                Feedings today
+                {t.home.feedingsToday}
               </h2>
               <button
                 onClick={() => setShowFeedingsBreakdown(false)}
@@ -421,7 +423,7 @@ export default function HomePage() {
             </div>
 
             {sortedDayFeedings.length === 0 ? (
-              <p className="py-6 text-center text-sm text-neutral-400">No feedings logged today.</p>
+              <p className="py-6 text-center text-sm text-neutral-400">{t.home.noFeedingsToday}</p>
             ) : (
               <ul className="space-y-2">
                 {sortedDayFeedings.map((f) => (
@@ -440,7 +442,7 @@ export default function HomePage() {
                             {formatTime(f.occurred_at)}
                           </span>
                           <span className="block text-xs text-neutral-500">
-                            {feedTypeLabel(f.feed_type)}
+                            {t.feedTypes[f.feed_type as FeedType]}
                             {f.feed_type === "solid" && f.solid_food_id && solidFoodNameById.get(f.solid_food_id)
                               ? ` · ${solidFoodNameById.get(f.solid_food_id)}`
                               : ""}
@@ -473,7 +475,7 @@ export default function HomePage() {
           >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-                Night wake-ups today
+                {t.home.wakeUpsToday}
               </h2>
               <button
                 onClick={() => setShowWakeUpsBreakdown(false)}
@@ -484,7 +486,7 @@ export default function HomePage() {
             </div>
 
             {todayNightWakeUps.length === 0 ? (
-              <p className="py-6 text-center text-sm text-neutral-400">No night wake-ups today.</p>
+              <p className="py-6 text-center text-sm text-neutral-400">{t.home.noWakeUpsToday}</p>
             ) : (
               <ul className="space-y-2">
                 {todayNightWakeUps.map((w, i) => (
@@ -496,7 +498,7 @@ export default function HomePage() {
                       {formatTime(w.wokeAt)} – {formatTime(w.backAsleepAt)}
                     </p>
                     <p className="text-xs text-neutral-500">
-                      Awake for {formatDuration(w.awakeMinutes)}
+                      {t.home.awakeFor(formatDuration(w.awakeMinutes))}
                     </p>
                   </li>
                 ))}
@@ -517,7 +519,7 @@ export default function HomePage() {
           >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-                Naps today
+                {t.home.napsToday}
               </h2>
               <button
                 onClick={() => setShowNapsBreakdown(false)}
@@ -528,7 +530,7 @@ export default function HomePage() {
             </div>
 
             {todayNaps.length === 0 ? (
-              <p className="py-6 text-center text-sm text-neutral-400">No naps logged today.</p>
+              <p className="py-6 text-center text-sm text-neutral-400">{t.home.noNapsToday}</p>
             ) : (
               <ul className="space-y-2">
                 {todayNaps.map((nap) => (
@@ -544,7 +546,7 @@ export default function HomePage() {
                         <span className="text-lg">🛏️</span>
                         <span className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
                           {formatTime(nap.started_at)}
-                          {nap.ended_at ? ` – ${formatTime(nap.ended_at)}` : " – ongoing"}
+                          {nap.ended_at ? ` – ${formatTime(nap.ended_at)}` : ` – ${t.home.ongoing}`}
                         </span>
                       </span>
                       <span className="text-sm text-neutral-600 dark:text-neutral-300">
@@ -561,13 +563,13 @@ export default function HomePage() {
 
       {wakePrompt && (
         <div className="fixed inset-x-4 bottom-20 z-20 flex items-center justify-between rounded-xl bg-neutral-900 p-4 text-white shadow-lg sm:bottom-6 sm:left-auto sm:right-6 sm:w-80">
-          <span className="text-sm">Did he eat during that wake-up?</span>
+          <span className="text-sm">{t.home.wakePromptQuestion}</span>
           <div className="flex gap-2">
             <button
               onClick={() => setWakePrompt(null)}
               className="rounded-lg px-3 py-1.5 text-sm text-neutral-300"
             >
-              No
+              {t.common.no}
             </button>
             <button
               onClick={() => {
@@ -576,7 +578,7 @@ export default function HomePage() {
               }}
               className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white"
             >
-              Log it
+              {t.home.logIt}
             </button>
           </div>
         </div>
