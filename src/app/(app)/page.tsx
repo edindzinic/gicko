@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { addDays, differenceInMinutes, endOfDay, format, isToday, parseISO, startOfDay, subDays } from "date-fns";
-import { Bed, ChevronLeft, ChevronRight, Milk, Moon, PencilLine, Sun, Timer, X } from "lucide-react";
+import { Bed, ChevronLeft, ChevronRight, Droplet, Milk, Moon, PencilLine, Sun, Timer, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
+import { PumpingModal } from "@/components/PumpingModal";
 import { DayTimeline } from "@/components/DayTimeline";
 import {
   computeDayStats,
@@ -21,6 +22,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
+type PumpingSession = Tables<"pumping_sessions">;
 
 export default function HomePage() {
   const { t } = useLanguage();
@@ -28,7 +30,9 @@ export default function HomePage() {
   const [openSession, setOpenSession] = useState<SleepSession | null>(null);
   const [daySessions, setDaySessions] = useState<SleepSession[]>([]);
   const [dayFeedings, setDayFeedings] = useState<Feeding[]>([]);
+  const [dayPumping, setDayPumping] = useState<PumpingSession[]>([]);
   const [nightSessions, setNightSessions] = useState<SleepSession[]>([]);
+  const [isMom, setIsMom] = useState(false);
   const [loading, setLoading] = useState(true);
   const [feedingModalSleepId, setFeedingModalSleepId] = useState<string | null | undefined>(
     undefined,
@@ -41,11 +45,14 @@ export default function HomePage() {
     null,
   );
   const [creatingFeeding, setCreatingFeeding] = useState<{ at: Date } | null>(null);
+  const [editingPumping, setEditingPumping] = useState<PumpingSession | null>(null);
+  const [creatingPumping, setCreatingPumping] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [solidFoods, setSolidFoods] = useState<Tables<"solid_foods">[]>([]);
   const [showFeedingsBreakdown, setShowFeedingsBreakdown] = useState(false);
   const [showWakeUpsBreakdown, setShowWakeUpsBreakdown] = useState(false);
   const [showNapsBreakdown, setShowNapsBreakdown] = useState(false);
+  const [showPumpingBreakdown, setShowPumpingBreakdown] = useState(false);
 
   const viewingToday = isToday(selectedDate);
   const dayKey = format(selectedDate, "yyyy-MM-dd");
@@ -64,12 +71,25 @@ export default function HomePage() {
       .then(({ data }) => setSolidFoods(data ?? []));
   }, []);
 
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_mom")
+        .eq("id", user.id)
+        .single();
+      setIsMom(profile?.is_mom ?? false);
+    });
+  }, []);
+
   const load = useCallback(async () => {
     const supabase = createClient();
     const dayStart = startOfDay(selectedDate).toISOString();
     const dayEnd = endOfDay(selectedDate).toISOString();
 
-    const [{ data: open }, { data: sessions }, { data: feedings }, { data: nights }] =
+    const [{ data: open }, { data: sessions }, { data: feedings }, { data: nights }, { data: pumping }] =
       await Promise.all([
         supabase
           .from("sleep_sessions")
@@ -92,12 +112,19 @@ export default function HomePage() {
           .order("occurred_at", { ascending: false }),
         // Fetched unscoped by day so wake-up chains aren't cut off at midnight.
         supabase.from("sleep_sessions").select("*").eq("is_night_sleep", true),
+        supabase
+          .from("pumping_sessions")
+          .select("*")
+          .gte("occurred_at", dayStart)
+          .lte("occurred_at", dayEnd)
+          .order("occurred_at", { ascending: false }),
       ]);
 
     setOpenSession(open ?? null);
     setDaySessions(sessions ?? []);
     setDayFeedings(feedings ?? []);
     setNightSessions(nights ?? []);
+    setDayPumping(pumping ?? []);
     setLoading(false);
   }, [selectedDate]);
 
@@ -154,6 +181,10 @@ export default function HomePage() {
   const todayNaps = daySessions
     .filter((s) => !s.is_night_sleep)
     .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+  const totalPumpedMlToday = dayPumping.reduce((sum, p) => sum + p.amount_ml, 0);
+  const sortedDayPumping = [...dayPumping].sort(
+    (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime(),
+  );
 
   if (loading) {
     return <div className="p-6 text-center text-neutral-400">{t.common.loading}</div>;
@@ -273,9 +304,18 @@ export default function HomePage() {
       {viewingToday && (
         <button
           onClick={() => setFeedingModalSleepId(null)}
-          className="mb-6 w-full rounded-xl border-2 border-accent py-4 text-lg font-semibold text-accent active:scale-[0.98]"
+          className="mb-3 w-full rounded-xl border-2 border-accent py-4 text-lg font-semibold text-accent active:scale-[0.98]"
         >
           {t.home.logAFeeding}
+        </button>
+      )}
+
+      {viewingToday && isMom && (
+        <button
+          onClick={() => setCreatingPumping(true)}
+          className="mb-6 w-full rounded-xl border-2 border-accent py-4 text-lg font-semibold text-accent active:scale-[0.98]"
+        >
+          {t.home.logPumping}
         </button>
       )}
 
@@ -329,6 +369,26 @@ export default function HomePage() {
           <p className="text-xs text-neutral-500">{t.home.statNightWakeUps}</p>
         </button>
       </div>
+
+      {isMom && (
+        <button
+          onClick={() => setShowPumpingBreakdown(true)}
+          className="mb-6 flex w-full items-center justify-between rounded-2xl border border-neutral-200 bg-white p-4 text-left transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
+        >
+          <span className="flex items-center gap-2">
+            <Droplet className="h-4 w-4 text-accent" strokeWidth={1.75} />
+            <span className="text-sm text-neutral-500">{t.home.statPumping}</span>
+          </span>
+          <span className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+            {Math.round(totalPumpedMlToday)}ml
+            {dayPumping.length > 0 && (
+              <span className="ml-1 text-xs font-normal text-neutral-400">
+                · {dayPumping.length}
+              </span>
+            )}
+          </span>
+        </button>
+      )}
 
       {/* Timeline */}
       <h2 className="mb-2 text-sm font-semibold text-neutral-500">{t.home.timeline}</h2>
@@ -396,6 +456,28 @@ export default function HomePage() {
           onClose={() => setCreatingFeeding(null)}
           onSaved={() => {
             setCreatingFeeding(null);
+            load();
+          }}
+        />
+      )}
+
+      {editingPumping && (
+        <PumpingModal
+          session={editingPumping}
+          onClose={() => setEditingPumping(null)}
+          onSaved={() => {
+            setEditingPumping(null);
+            load();
+          }}
+        />
+      )}
+
+      {creatingPumping && (
+        <PumpingModal
+          defaultDate={selectedDate}
+          onClose={() => setCreatingPumping(false)}
+          onSaved={() => {
+            setCreatingPumping(false);
             load();
           }}
         />
@@ -551,6 +633,58 @@ export default function HomePage() {
                       </span>
                       <span className="text-sm text-neutral-600 dark:text-neutral-300">
                         {formatDuration(sessionDurationMinutes(nap.started_at, nap.ended_at))}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showPumpingBreakdown && (
+        <div
+          className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center"
+          onClick={() => setShowPumpingBreakdown(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-neutral-950"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                {t.home.pumpingToday}
+              </h2>
+              <button
+                onClick={() => setShowPumpingBreakdown(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-900"
+              >
+                <X className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </div>
+
+            {sortedDayPumping.length === 0 ? (
+              <p className="py-6 text-center text-sm text-neutral-400">{t.home.noPumpingToday}</p>
+            ) : (
+              <ul className="space-y-2">
+                {sortedDayPumping.map((p) => (
+                  <li key={p.id}>
+                    <button
+                      onClick={() => {
+                        setShowPumpingBreakdown(false);
+                        setEditingPumping(p);
+                      }}
+                      className="flex w-full items-center justify-between rounded-xl border border-neutral-200 px-3 py-2.5 text-left dark:border-neutral-800"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="text-lg">🥛</span>
+                        <span className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
+                          {formatTime(p.occurred_at)}
+                        </span>
+                      </span>
+                      <span className="text-sm text-neutral-600 dark:text-neutral-300">
+                        {p.amount_ml}ml · {formatDuration(p.duration_minutes)}
                       </span>
                     </button>
                   </li>

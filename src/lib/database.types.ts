@@ -97,6 +97,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          is_mom: boolean
           language: string
           username: string
         }
@@ -104,6 +105,7 @@ export type Database = {
           created_at?: string
           display_name: string
           id: string
+          is_mom?: boolean
           language?: string
           username: string
         }
@@ -111,8 +113,39 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          is_mom?: boolean
           language?: string
           username?: string
+        }
+        Relationships: []
+      }
+      pumping_sessions: {
+        Row: {
+          amount_ml: number
+          created_at: string
+          created_by: string | null
+          duration_minutes: number
+          id: string
+          notes: string | null
+          occurred_at: string
+        }
+        Insert: {
+          amount_ml: number
+          created_at?: string
+          created_by?: string | null
+          duration_minutes: number
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+        }
+        Update: {
+          amount_ml?: number
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          occurred_at?: string
         }
         Relationships: []
       }
