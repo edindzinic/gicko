@@ -200,6 +200,30 @@ export type Database = {
         }
         Relationships: []
       }
+      wake_windows: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          hours: number
+          id: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          hours: number
+          id?: string
+          position: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          hours?: number
+          id?: string
+          position?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

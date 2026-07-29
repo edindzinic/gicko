@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { addDays, differenceInMinutes, endOfDay, format, isToday, parseISO, startOfDay, subDays } from "date-fns";
+import { addDays, addHours, differenceInMinutes, endOfDay, format, isToday, parseISO, startOfDay, subDays } from "date-fns";
 import { Bed, ChevronLeft, ChevronRight, Droplet, Milk, Moon, PencilLine, Sun, Timer, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
@@ -49,6 +49,7 @@ export default function HomePage() {
   const [creatingPumping, setCreatingPumping] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [solidFoods, setSolidFoods] = useState<Tables<"solid_foods">[]>([]);
+  const [wakeWindows, setWakeWindows] = useState<Tables<"wake_windows">[]>([]);
   const [showFeedingsBreakdown, setShowFeedingsBreakdown] = useState(false);
   const [showWakeUpsBreakdown, setShowWakeUpsBreakdown] = useState(false);
   const [showNapsBreakdown, setShowNapsBreakdown] = useState(false);
@@ -69,6 +70,15 @@ export default function HomePage() {
       .from("solid_foods")
       .select("*")
       .then(({ data }) => setSolidFoods(data ?? []));
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("wake_windows")
+      .select("*")
+      .order("position", { ascending: true })
+      .then(({ data }) => setWakeWindows(data ?? []));
   }, []);
 
   useEffect(() => {
@@ -161,7 +171,7 @@ export default function HomePage() {
     setNightAwakeningPending(true);
   }
 
-  const { nightSleepMinutes, dayAwakeMinutes, napMinutes } = computeDayStats(
+  const { nightSleepMinutes, dayAwakeMinutes, napMinutes, morningWake } = computeDayStats(
     dayKey,
     nightSessions,
     daySessions,
@@ -185,6 +195,24 @@ export default function HomePage() {
   const sortedDayPumping = [...dayPumping].sort(
     (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime(),
   );
+
+  const lastEndedSession = daySessions.find((s) => s.ended_at);
+  const statusSession = openSession ?? lastEndedSession ?? null;
+  const statusTime = openSession ? openSession.started_at : (lastEndedSession?.ended_at ?? null);
+
+  const completedNapsSinceWake = morningWake
+    ? daySessions.filter(
+        (s) => !s.is_night_sleep && s.ended_at && parseISO(s.started_at) >= morningWake,
+      ).length
+    : 0;
+  const wakeWindowHours =
+    wakeWindows.length > 0
+      ? wakeWindows[Math.min(completedNapsSinceWake, wakeWindows.length - 1)].hours
+      : null;
+  const nextNapAt =
+    !openSession && statusTime && wakeWindowHours != null
+      ? addHours(parseISO(statusTime), wakeWindowHours)
+      : null;
 
   if (loading) {
     return <div className="p-6 text-center text-neutral-400">{t.common.loading}</div>;
@@ -222,31 +250,28 @@ export default function HomePage() {
           }`}
         >
           <p className="text-sm opacity-80">{openSession ? t.home.asleepSince : t.home.awakeSince}</p>
-          {(() => {
-            const lastEndedSession = daySessions.find((s) => s.ended_at);
-            const statusSession = openSession ?? lastEndedSession ?? null;
-            const statusTime = openSession
-              ? openSession.started_at
-              : (lastEndedSession?.ended_at ?? null);
-
-            return statusSession && statusTime ? (
-              <>
-                <button
-                  onClick={() => setEditingSession(statusSession)}
-                  className="mb-1 flex w-full items-center justify-center gap-2 text-4xl font-semibold tracking-tight"
-                >
-                  {formatTime(statusTime)}
-                  <PencilLine className="h-4 w-4 opacity-70" strokeWidth={1.75} />
-                </button>
-                <p className="mb-4 text-sm font-medium opacity-90">
-                  {formatDuration(Math.max(0, differenceInMinutes(now, parseISO(statusTime))))}{" "}
-                  {openSession ? t.home.asleep : t.home.awake}
+          {statusSession && statusTime ? (
+            <>
+              <button
+                onClick={() => setEditingSession(statusSession)}
+                className="mb-1 flex w-full items-center justify-center gap-2 text-4xl font-semibold tracking-tight"
+              >
+                {formatTime(statusTime)}
+                <PencilLine className="h-4 w-4 opacity-70" strokeWidth={1.75} />
+              </button>
+              <p className={`text-sm font-medium opacity-90 ${nextNapAt ? "mb-1" : "mb-4"}`}>
+                {formatDuration(Math.max(0, differenceInMinutes(now, parseISO(statusTime))))}{" "}
+                {openSession ? t.home.asleep : t.home.awake}
+              </p>
+              {nextNapAt && (
+                <p className="mb-4 text-xs opacity-75">
+                  {t.home.nextNapAround(format(nextNapAt, "HH:mm"))}
                 </p>
-              </>
-            ) : (
-              <p className="mb-4 text-4xl font-semibold">—</p>
-            );
-          })()}
+              )}
+            </>
+          ) : (
+            <p className="mb-4 text-4xl font-semibold">—</p>
+          )}
 
           {openSession ? (
             openSession.is_night_sleep ? (

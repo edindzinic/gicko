@@ -204,5 +204,5 @@ export function computeDayStats(
 
   const dayAwakeMinutes = Math.max(0, totalDayMinutes - napMinutes);
 
-  return { nightSleepMinutes, dayAwakeMinutes, napMinutes };
+  return { nightSleepMinutes, dayAwakeMinutes, napMinutes, morningWake };
 }

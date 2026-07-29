@@ -64,6 +64,7 @@ const en = {
     logIt: "Log it",
     pumpingToday: "Pumping today",
     noPumpingToday: "No pumping logged today.",
+    nextNapAround: (time: string) => `⏰ Next nap around ${time}`,
   },
   calendar: {
     month: "Month",
@@ -146,6 +147,11 @@ const en = {
     foodAlreadyExists: "That food is already on the list.",
     foodAddError: "Couldn't add that food.",
     solidFoodsHint: "These show up as options when logging a solid feeding.",
+    wakeWindows: "Wake windows",
+    wakeWindowPlaceholder: "e.g. 3.5",
+    removeWakeWindowAria: (n: number) => `Remove wake window ${n}`,
+    wakeWindowsHint:
+      "How long he should stay awake before each nap, in order. The last value repeats for any later naps.",
     exportData: "Export data",
     from: "From",
     to: "To",
@@ -226,6 +232,7 @@ const bs: Translations = {
     logIt: "Zabilježi",
     pumpingToday: "Današnja izdajanja",
     noPumpingToday: "Danas nema zabilježenih izdajanja.",
+    nextNapAround: (time: string) => `⏰ Sljedeća dremka oko ${time}`,
   },
   calendar: {
     month: "Mjesec",
@@ -308,6 +315,11 @@ const bs: Translations = {
     foodAlreadyExists: "Ta namirnica je već na listi.",
     foodAddError: "Nije moguće dodati namirnicu.",
     solidFoodsHint: "Ove namirnice se pojavljuju kao opcije prilikom bilježenja krute hrane.",
+    wakeWindows: "Prozori budnosti",
+    wakeWindowPlaceholder: "npr. 3.5",
+    removeWakeWindowAria: (n: number) => `Ukloni prozor budnosti ${n}`,
+    wakeWindowsHint:
+      "Koliko dugo treba biti budan prije svake dremke, redoslijedom. Posljednja vrijednost se ponavlja za sve naredne dremke.",
     exportData: "Izvoz podataka",
     from: "Od",
     to: "Do",
@@ -386,6 +398,7 @@ const de: Translations = {
     logIt: "Erfassen",
     pumpingToday: "Heutiges Abpumpen",
     noPumpingToday: "Heute kein Abpumpen erfasst.",
+    nextNapAround: (time: string) => `⏰ Nächstes Nickerchen gegen ${time}`,
   },
   calendar: {
     month: "Monat",
@@ -468,6 +481,11 @@ const de: Translations = {
     foodAlreadyExists: "Dieses Lebensmittel ist bereits auf der Liste.",
     foodAddError: "Lebensmittel konnte nicht hinzugefügt werden.",
     solidFoodsHint: "Diese erscheinen als Optionen beim Erfassen einer Fütterung mit fester Nahrung.",
+    wakeWindows: "Wachfenster",
+    wakeWindowPlaceholder: "z. B. 3.5",
+    removeWakeWindowAria: (n: number) => `Wachfenster ${n} entfernen`,
+    wakeWindowsHint:
+      "Wie lange er vor jedem Nickerchen wach bleiben soll, der Reihe nach. Der letzte Wert wiederholt sich für alle weiteren Nickerchen.",
     exportData: "Daten exportieren",
     from: "Von",
     to: "Bis",
