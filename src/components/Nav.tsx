@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Calendar, Home, Settings } from "lucide-react";
+import { Calendar, ChartLine, Home, Settings } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function Nav() {
@@ -13,6 +13,7 @@ export function Nav() {
   const links = [
     { href: "/", label: t.nav.home, Icon: Home },
     { href: "/calendar", label: t.nav.calendar, Icon: Calendar },
+    { href: "/dashboard", label: t.nav.dashboard, Icon: ChartLine },
     { href: "/settings", label: t.nav.settings, Icon: Settings },
   ];
 

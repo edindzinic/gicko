@@ -10,6 +10,7 @@ const en = {
   nav: {
     home: "Home",
     calendar: "Calendar",
+    dashboard: "Dashboards",
     settings: "Settings",
   },
   common: {
@@ -70,6 +71,12 @@ const en = {
     month: "Month",
     week: "Week",
     weekdayLetters: ["M", "T", "W", "T", "F", "S", "S"],
+  },
+  dashboard: {
+    title: "Dashboards",
+    napsCount: "Number of naps",
+    average: "Avg",
+    noData: "No data in this range.",
   },
   dayDetail: {
     note: "Note",
@@ -178,6 +185,7 @@ const bs: Translations = {
   nav: {
     home: "Početna",
     calendar: "Kalendar",
+    dashboard: "Statistika",
     settings: "Postavke",
   },
   common: {
@@ -238,6 +246,12 @@ const bs: Translations = {
     month: "Mjesec",
     week: "Sedmica",
     weekdayLetters: ["P", "U", "S", "Č", "P", "S", "N"],
+  },
+  dashboard: {
+    title: "Statistika",
+    napsCount: "Broj dremki",
+    average: "Prosjek",
+    noData: "Nema podataka u ovom periodu.",
   },
   dayDetail: {
     note: "Bilješka",
@@ -344,6 +358,7 @@ const de: Translations = {
   nav: {
     home: "Start",
     calendar: "Kalender",
+    dashboard: "Statistiken",
     settings: "Einstellungen",
   },
   common: {
@@ -404,6 +419,12 @@ const de: Translations = {
     month: "Monat",
     week: "Woche",
     weekdayLetters: ["M", "D", "M", "D", "F", "S", "S"],
+  },
+  dashboard: {
+    title: "Statistiken",
+    napsCount: "Anzahl Nickerchen",
+    average: "Ø",
+    noData: "Keine Daten in diesem Zeitraum.",
   },
   dayDetail: {
     note: "Notiz",
