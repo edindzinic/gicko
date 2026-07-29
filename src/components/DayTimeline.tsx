@@ -53,6 +53,7 @@ export function DayTimeline({
   onCreateFeeding,
   isToday = false,
   allowDragCreate = true,
+  wakeWindow,
 }: {
   day: string; // yyyy-MM-dd
   sessions: SleepSession[];
@@ -64,6 +65,8 @@ export function DayTimeline({
   isToday?: boolean;
   /** Set false to disable dragging to create a sleep session with a range (tap-to-choose still works). */
   allowDragCreate?: boolean;
+  /** Current wake window, shown as a subtle band from wake-up to the predicted next nap. */
+  wakeWindow?: { startMinutes: number; endMinutes: number };
 }) {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -166,6 +169,16 @@ export function DayTimeline({
               style={{ top: topForMinutes(hour * 60) }}
             />
           ))}
+
+          {wakeWindow && (
+            <div
+              className="pointer-events-none absolute inset-x-0 border-y border-dashed border-accent/20 bg-accent/5"
+              style={{
+                top: topForMinutes(wakeWindow.startMinutes),
+                height: topForMinutes(wakeWindow.endMinutes - wakeWindow.startMinutes),
+              }}
+            />
+          )}
 
           {isToday && (
             <div

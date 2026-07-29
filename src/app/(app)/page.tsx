@@ -15,6 +15,7 @@ import {
   formatDuration,
   formatTime,
   isNightTime,
+  minutesSinceMidnight,
   sessionDurationMinutes,
 } from "@/lib/time";
 import { feedTypeIcon, type FeedType } from "@/lib/feedingTypes";
@@ -213,6 +214,13 @@ export default function HomePage() {
     !openSession && statusTime && wakeWindowHours != null
       ? addHours(parseISO(statusTime), wakeWindowHours)
       : null;
+  const wakeWindowBand =
+    viewingToday && nextNapAt && statusTime
+      ? {
+          startMinutes: minutesSinceMidnight(statusTime),
+          endMinutes: minutesSinceMidnight(statusTime) + (wakeWindowHours ?? 0) * 60,
+        }
+      : undefined;
 
   if (loading) {
     return <div className="p-6 text-center text-neutral-400">{t.common.loading}</div>;
@@ -427,6 +435,7 @@ export default function HomePage() {
         onCreateSleep={(start, end) => setCreatingSleep({ start, end })}
         onCreateFeeding={(at) => setCreatingFeeding({ at })}
         allowDragCreate={false}
+        wakeWindow={wakeWindowBand}
       />
 
       {feedingModalSleepId !== undefined && (
