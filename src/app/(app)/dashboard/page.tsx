@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { addDays, eachDayOfInterval, endOfDay, format, isToday, parseISO, startOfDay, subDays } from "date-fns";
-import { Bed, Droplet, Hash, Milk, Moon, Sun, Timer } from "lucide-react";
+import { Bed, Droplet, GlassWater, Hash, Milk, Moon, Sun, Timer } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { TrendlineChart, type TrendPoint } from "@/components/TrendlineChart";
@@ -92,6 +92,7 @@ export default function DashboardPage() {
   const napCountPoints: TrendPoint[] = [];
   const wakeUpPoints: TrendPoint[] = [];
   const feedingPoints: TrendPoint[] = [];
+  const feedingMlPoints: TrendPoint[] = [];
   const pumpingPoints: TrendPoint[] = [];
 
   for (const day of days) {
@@ -116,9 +117,14 @@ export default function DashboardPage() {
     const dayWakeUps = nightWakeUps.filter(
       (w) => format(parseISO(w.wokeAt), "yyyy-MM-dd") === dayKey,
     ).length;
-    const dayFeedingsCount = feedings.filter(
+    const dayFeedings = feedings.filter(
       (feeding) => format(parseISO(feeding.occurred_at), "yyyy-MM-dd") === dayKey,
-    ).length;
+    );
+    const dayFeedingsCount = dayFeedings.length;
+    const dayFeedingMl = dayFeedings.reduce((sum, feeding) => {
+      if (feeding.amount == null) return sum;
+      return sum + (feeding.unit === "oz" ? feeding.amount * 29.5735 : feeding.amount);
+    }, 0);
     const dayPumpingMl = pumping
       .filter((session) => format(parseISO(session.occurred_at), "yyyy-MM-dd") === dayKey)
       .reduce((sum, session) => sum + session.amount_ml, 0);
@@ -129,6 +135,7 @@ export default function DashboardPage() {
     napCountPoints.push({ day: dayKey, value: napCount });
     wakeUpPoints.push({ day: dayKey, value: dayWakeUps });
     feedingPoints.push({ day: dayKey, value: dayFeedingsCount });
+    feedingMlPoints.push({ day: dayKey, value: dayFeedingMl });
     pumpingPoints.push({ day: dayKey, value: dayPumpingMl });
   }
 
@@ -215,6 +222,14 @@ export default function DashboardPage() {
             title={t.home.statFeedings}
             points={feedingPoints}
             formatValue={formatCount}
+            averageLabel={t.dashboard.average}
+            noDataLabel={t.dashboard.noData}
+          />
+          <TrendlineChart
+            icon={GlassWater}
+            title={t.dashboard.feedingsMl}
+            points={feedingMlPoints}
+            formatValue={(v) => `${Math.round(v)}ml`}
             averageLabel={t.dashboard.average}
             noDataLabel={t.dashboard.noData}
           />
