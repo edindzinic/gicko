@@ -64,7 +64,7 @@ const en = {
     logIt: "Log it",
     pumpingToday: "Pumping today",
     noPumpingToday: "No pumping logged today.",
-    nextNapAround: (time: string) => `⏰ Next nap around ${time}`,
+    nextNap: "Next nap",
   },
   calendar: {
     month: "Month",
@@ -232,7 +232,7 @@ const bs: Translations = {
     logIt: "Zabilježi",
     pumpingToday: "Današnja izdajanja",
     noPumpingToday: "Danas nema zabilježenih izdajanja.",
-    nextNapAround: (time: string) => `⏰ Sljedeća dremka oko ${time}`,
+    nextNap: "Sljedeća dremka",
   },
   calendar: {
     month: "Mjesec",
@@ -398,7 +398,7 @@ const de: Translations = {
     logIt: "Erfassen",
     pumpingToday: "Heutiges Abpumpen",
     noPumpingToday: "Heute kein Abpumpen erfasst.",
-    nextNapAround: (time: string) => `⏰ Nächstes Nickerchen gegen ${time}`,
+    nextNap: "Nächstes Nickerchen",
   },
   calendar: {
     month: "Monat",
