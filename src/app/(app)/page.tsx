@@ -354,20 +354,12 @@ export default function HomePage() {
               </button>
             </>
           ) : (
-            <>
-              <button
-                onClick={() => startSleep(false)}
-                className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-amber-800 shadow-sm active:scale-[0.98]"
-              >
-                {t.home.putDownToSleep}
-              </button>
-              <button
-                onClick={() => startSleep(true)}
-                className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
-              >
-                {t.home.startNightSleep}
-              </button>
-            </>
+            <button
+              onClick={() => startSleep(isLastWakeWindow)}
+              className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-amber-800 shadow-sm active:scale-[0.98]"
+            >
+              {t.home.putDownToSleep}
+            </button>
           )}
         </div>
       )}
