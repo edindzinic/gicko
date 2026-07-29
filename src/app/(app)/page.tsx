@@ -210,6 +210,7 @@ export default function HomePage() {
     wakeWindows.length > 0
       ? wakeWindows[Math.min(completedNapsSinceWake, wakeWindows.length - 1)].hours
       : null;
+  const isLastWakeWindow = wakeWindows.length > 0 && completedNapsSinceWake >= wakeWindows.length - 1;
   const nextNapAt =
     !openSession && statusTime && wakeWindowHours != null
       ? addHours(parseISO(statusTime), wakeWindowHours)
@@ -277,7 +278,9 @@ export default function HomePage() {
                   </button>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs opacity-80">{t.home.nextNap}</p>
+                  <p className="text-xs opacity-80">
+                    {isLastWakeWindow ? t.home.nextBedtime : t.home.nextNap}
+                  </p>
                   <p className="text-4xl font-semibold tracking-tight">
                     {format(nextNapAt, "HH:mm")}
                   </p>

@@ -65,6 +65,7 @@ const en = {
     pumpingToday: "Pumping today",
     noPumpingToday: "No pumping logged today.",
     nextNap: "Next nap",
+    nextBedtime: "Next bedtime",
   },
   calendar: {
     month: "Month",
@@ -233,6 +234,7 @@ const bs: Translations = {
     pumpingToday: "Današnja izdajanja",
     noPumpingToday: "Danas nema zabilježenih izdajanja.",
     nextNap: "Sljedeća dremka",
+    nextBedtime: "Sljedeće spavanje",
   },
   calendar: {
     month: "Mjesec",
@@ -399,6 +401,7 @@ const de: Translations = {
     pumpingToday: "Heutiges Abpumpen",
     noPumpingToday: "Heute kein Abpumpen erfasst.",
     nextNap: "Nächstes Nickerchen",
+    nextBedtime: "Nächste Schlafenszeit",
   },
   calendar: {
     month: "Monat",
