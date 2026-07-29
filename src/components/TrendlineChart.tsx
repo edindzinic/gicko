@@ -1,9 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import type { LucideIcon } from "lucide-react";
 
 const CHART_WIDTH = 600;
 const CHART_HEIGHT = 120;
-const PAD_X = 6;
+const PAD_X = 10;
 const PAD_Y = 10;
 const MAX_DOTS = 21;
 
@@ -24,6 +27,8 @@ export function TrendlineChart({
   averageLabel: string;
   noDataLabel: string;
 }) {
+  const [selected, setSelected] = useState<number | null>(null);
+
   const values = points.map((p) => p.value);
   const hasData = values.some((v) => v > 0);
   const maxValue = Math.max(...values, 1);
@@ -42,6 +47,19 @@ export function TrendlineChart({
       ? `${linePath} L ${coords[coords.length - 1].x.toFixed(1)} ${CHART_HEIGHT - PAD_Y} L ${coords[0].x.toFixed(1)} ${CHART_HEIGHT - PAD_Y} Z`
       : "";
 
+  const yTicks = [
+    { y: PAD_Y, value: maxValue },
+    { y: CHART_HEIGHT / 2, value: maxValue / 2 },
+    { y: CHART_HEIGHT - PAD_Y, value: 0 },
+  ];
+
+  const selectedPoint = selected != null ? points[selected] : null;
+  const showAllDots = coords.length <= MAX_DOTS;
+
+  function toggle(i: number) {
+    setSelected((prev) => (prev === i ? null : i));
+  }
+
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -51,30 +69,84 @@ export function TrendlineChart({
         </h3>
         {hasData && (
           <span className="text-sm font-medium text-neutral-400">
-            {averageLabel} {formatValue(average)}
+            {selectedPoint
+              ? `${format(parseISO(selectedPoint.day), "MMM d")}: ${formatValue(selectedPoint.value)}`
+              : `${averageLabel} ${formatValue(average)}`}
           </span>
         )}
       </div>
 
       {hasData ? (
         <>
-          <svg
-            viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-            preserveAspectRatio="none"
-            className="h-28 w-full"
-          >
-            <path d={areaPath} className="fill-accent/10" />
-            <path
-              d={linePath}
-              className="fill-none stroke-accent"
-              strokeWidth={2}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-            {coords.length <= MAX_DOTS &&
-              coords.map((c, i) => <circle key={i} cx={c.x} cy={c.y} r={2.5} className="fill-accent" />)}
-          </svg>
-          <div className="mt-1 flex justify-between text-[10px] text-neutral-400">
+          <div className="flex gap-2">
+            <div className="relative h-28 w-10 shrink-0 text-right text-[10px] text-neutral-400">
+              {yTicks.map((tick, i) => (
+                <span
+                  key={i}
+                  className="absolute right-0 -translate-y-1/2"
+                  style={{ top: `${(tick.y / CHART_HEIGHT) * 100}%` }}
+                >
+                  {formatValue(tick.value)}
+                </span>
+              ))}
+            </div>
+            <svg
+              viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+              preserveAspectRatio="none"
+              className="h-28 w-full"
+            >
+              {yTicks.map((tick, i) => (
+                <line
+                  key={i}
+                  x1={0}
+                  x2={CHART_WIDTH}
+                  y1={tick.y}
+                  y2={tick.y}
+                  className="stroke-neutral-200 dark:stroke-neutral-800"
+                  strokeWidth={1}
+                />
+              ))}
+              <path d={areaPath} className="fill-accent/10" />
+              <path
+                d={linePath}
+                className="fill-none stroke-accent"
+                strokeWidth={2}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+              {coords.map((c, i) => (
+                <g key={i}>
+                  <circle
+                    cx={c.x}
+                    cy={c.y}
+                    r={8}
+                    className="cursor-pointer fill-transparent"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${format(parseISO(points[i].day), "MMM d")}: ${formatValue(points[i].value)}`}
+                    onClick={() => toggle(i)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggle(i);
+                      }
+                    }}
+                  />
+                  {(showAllDots || selected === i) && (
+                    <circle
+                      cx={c.x}
+                      cy={c.y}
+                      r={selected === i ? 4.5 : 2.5}
+                      className={`pointer-events-none fill-accent ${
+                        selected === i ? "stroke-2 stroke-white dark:stroke-neutral-950" : ""
+                      }`}
+                    />
+                  )}
+                </g>
+              ))}
+            </svg>
+          </div>
+          <div className="mt-1 flex justify-between pl-12 text-[10px] text-neutral-400">
             <span>{format(parseISO(points[0].day), "MMM d")}</span>
             <span>{format(parseISO(points[points.length - 1].day), "MMM d")}</span>
           </div>
