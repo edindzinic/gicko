@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Calendar, Home, Settings } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -17,10 +18,18 @@ export function Nav() {
 
   return (
     <>
+      {/* Mobile top bar */}
+      <div className="flex items-center justify-center gap-2 border-b border-neutral-200 bg-white/95 py-3 backdrop-blur sm:hidden dark:border-neutral-900 dark:bg-neutral-950/95">
+        <Image src="/icon.png" alt="" width={24} height={24} className="rounded-md" />
+        <span className="text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+          Gicko
+        </span>
+      </div>
+
       {/* Desktop sidebar */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-neutral-200 bg-white px-4 py-6 sm:flex dark:border-neutral-900 dark:bg-neutral-950">
         <div className="mb-9 flex items-center gap-2 px-2">
-          <span className="text-2xl">🍼</span>
+          <Image src="/icon.png" alt="" width={28} height={28} className="rounded-lg" />
           <span className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             Gicko
           </span>

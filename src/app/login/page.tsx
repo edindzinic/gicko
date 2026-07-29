@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -53,7 +54,13 @@ export default function LoginPage() {
         className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-8 shadow-xl shadow-neutral-200/50 dark:border-neutral-800 dark:bg-neutral-950 dark:shadow-2xl dark:shadow-black"
       >
         <div className="mb-7 text-center">
-          <div className="mb-3 text-4xl">🍼</div>
+          <Image
+            src="/icon.png"
+            alt=""
+            width={64}
+            height={64}
+            className="mx-auto mb-3 rounded-2xl"
+          />
           <h1 className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             {t.login.heading}
           </h1>
