@@ -270,15 +270,15 @@ export default function HomePage() {
                   <p className="text-xs opacity-80">{t.home.awakeSince}</p>
                   <button
                     onClick={() => setEditingSession(statusSession)}
-                    className="flex items-center gap-1 text-2xl font-semibold tracking-tight"
+                    className="flex items-center gap-1 text-4xl font-semibold tracking-tight"
                   >
                     {formatTime(statusTime)}
-                    <PencilLine className="h-3.5 w-3.5 opacity-70" strokeWidth={1.75} />
+                    <PencilLine className="h-4 w-4 opacity-70" strokeWidth={1.75} />
                   </button>
                 </div>
                 <div className="text-right">
                   <p className="text-xs opacity-80">{t.home.nextNap}</p>
-                  <p className="text-2xl font-semibold tracking-tight">
+                  <p className="text-4xl font-semibold tracking-tight">
                     {format(nextNapAt, "HH:mm")}
                   </p>
                 </div>
