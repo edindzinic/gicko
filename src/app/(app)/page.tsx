@@ -288,11 +288,13 @@ export default function HomePage() {
               </div>
               <div className="mb-1.5 h-2 w-full overflow-hidden rounded-full bg-white/25">
                 <div
-                  className={`h-full rounded-full transition-all ${wakeOverdue ? "bg-rose-300" : "bg-white"}`}
+                  className={`h-full rounded-full transition-all ${wakeOverdue ? "bg-rose-500" : "bg-white"}`}
                   style={{ width: `${wakeProgressPct}%` }}
                 />
               </div>
-              <p className="mb-4 text-sm font-medium opacity-90">
+              <p
+                className={`mb-4 text-sm font-semibold ${wakeOverdue ? "text-rose-600" : "font-medium opacity-90"}`}
+              >
                 {formatDuration(awakeMinutes)} {t.home.awake}
               </p>
             </>
