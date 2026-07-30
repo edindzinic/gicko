@@ -8,13 +8,13 @@ import type { Tables } from "@/lib/database.types";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
 import { PumpingModal } from "@/components/PumpingModal";
+import { NightWakingModal } from "@/components/NightWakingModal";
 import { DayTimeline } from "@/components/DayTimeline";
 import {
+  collectNightWakeUps,
   computeDayStats,
-  findNightWakeUps,
   formatDuration,
   formatTime,
-  isNightTime,
   minutesSinceMidnight,
   sessionDurationMinutes,
 } from "@/lib/time";
@@ -24,6 +24,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
 type PumpingSession = Tables<"pumping_sessions">;
+type NightWaking = Tables<"night_wakings">;
 
 export default function HomePage() {
   const { t } = useLanguage();
@@ -39,7 +40,9 @@ export default function HomePage() {
     undefined,
   );
   const [wakePrompt, setWakePrompt] = useState<string | null>(null);
-  const [nightAwakeningPending, setNightAwakeningPending] = useState(false);
+  const [nightWakings, setNightWakings] = useState<NightWaking[]>([]);
+  const [activeWaking, setActiveWaking] = useState<NightWaking | null>(null);
+  const [editingWaking, setEditingWaking] = useState<NightWaking | null>(null);
   const [editingSession, setEditingSession] = useState<SleepSession | null>(null);
   const [editingFeeding, setEditingFeeding] = useState<Feeding | null>(null);
   const [creatingSleep, setCreatingSleep] = useState<{ start: Date; end: Date | null } | null>(
@@ -100,8 +103,19 @@ export default function HomePage() {
     const dayStart = startOfDay(selectedDate).toISOString();
     const dayEnd = endOfDay(selectedDate).toISOString();
 
-    const [{ data: open }, { data: sessions }, { data: feedings }, { data: nights }, { data: pumping }] =
-      await Promise.all([
+    // A night's wakings can sit either side of midnight, so reach back a day to cover
+    // the whole night that this calendar day's stats are attributed to.
+    const wakingsFrom = subDays(startOfDay(selectedDate), 1).toISOString();
+
+    const [
+      { data: open },
+      { data: sessions },
+      { data: feedings },
+      { data: nights },
+      { data: pumping },
+      { data: wakings },
+      { data: openWaking },
+    ] = await Promise.all([
         supabase
           .from("sleep_sessions")
           .select("*")
@@ -129,6 +143,19 @@ export default function HomePage() {
           .gte("occurred_at", dayStart)
           .lte("occurred_at", dayEnd)
           .order("occurred_at", { ascending: false }),
+        supabase
+          .from("night_wakings")
+          .select("*")
+          .gte("started_at", wakingsFrom)
+          .lte("started_at", dayEnd)
+          .order("started_at", { ascending: false }),
+        supabase
+          .from("night_wakings")
+          .select("*")
+          .is("ended_at", null)
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
 
     setOpenSession(open ?? null);
@@ -136,6 +163,8 @@ export default function HomePage() {
     setDayFeedings(feedings ?? []);
     setNightSessions(nights ?? []);
     setDayPumping(pumping ?? []);
+    setNightWakings(wakings ?? []);
+    setActiveWaking(openWaking ?? null);
     setLoading(false);
   }, [selectedDate]);
 
@@ -155,21 +184,46 @@ export default function HomePage() {
   async function endSleep() {
     if (!openSession) return;
     const supabase = createClient();
-    const endedAt = new Date().toISOString();
     await supabase
       .from("sleep_sessions")
-      .update({ ended_at: endedAt })
+      .update({ ended_at: new Date().toISOString() })
       .eq("id", openSession.id);
-
-    if (isNightTime(endedAt)) {
-      setWakePrompt(openSession.id);
-    }
     load();
   }
 
-  async function handleNightAwakening() {
-    await endSleep();
-    setNightAwakeningPending(true);
+  /** Logs the start of a night waking. The night sleep session stays open. */
+  async function startNightWaking() {
+    if (!openSession) return;
+    const supabase = createClient();
+    await supabase.from("night_wakings").insert({
+      started_at: new Date().toISOString(),
+      sleep_session_id: openSession.id,
+    });
+    load();
+  }
+
+  async function endNightWaking() {
+    if (!activeWaking) return;
+    const supabase = createClient();
+    await supabase
+      .from("night_wakings")
+      .update({ ended_at: new Date().toISOString() })
+      .eq("id", activeWaking.id);
+
+    setWakePrompt(activeWaking.sleep_session_id ?? openSession?.id ?? null);
+    load();
+  }
+
+  /** Ends the night for good. Closes any waking still open so nothing is left dangling. */
+  async function morningWakeUp() {
+    if (!openSession) return;
+    const supabase = createClient();
+    const endedAt = new Date().toISOString();
+    if (activeWaking) {
+      await supabase.from("night_wakings").update({ ended_at: endedAt }).eq("id", activeWaking.id);
+    }
+    await supabase.from("sleep_sessions").update({ ended_at: endedAt }).eq("id", openSession.id);
+    load();
   }
 
   const { nightSleepMinutes, dayAwakeMinutes, napMinutes, morningWake } = computeDayStats(
@@ -177,8 +231,9 @@ export default function HomePage() {
     nightSessions,
     daySessions,
     viewingToday ? new Date() : endOfDay(selectedDate),
+    nightWakings,
   );
-  const todayNightWakeUps = findNightWakeUps(nightSessions).filter(
+  const todayNightWakeUps = collectNightWakeUps(nightWakings, nightSessions).filter(
     (w) => format(new Date(w.wokeAt), "yyyy-MM-dd") === dayKey,
   );
   const totalMlToday = dayFeedings.reduce((sum, f) => {
@@ -308,9 +363,23 @@ export default function HomePage() {
                 {formatTime(statusTime)}
                 <PencilLine className="h-4 w-4 opacity-70" strokeWidth={1.75} />
               </button>
-              <p className="mb-4 text-sm font-medium opacity-90">
+              <p className={`text-sm font-medium opacity-90 ${activeWaking ? "mb-2" : "mb-4"}`}>
                 {formatDuration(awakeMinutes)} {openSession ? t.home.asleep : t.home.awake}
               </p>
+              {activeWaking && (
+                <button
+                  onClick={() => setEditingWaking(activeWaking)}
+                  className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium"
+                >
+                  {t.home.awakeNowSince(
+                    formatTime(activeWaking.started_at),
+                    formatDuration(
+                      Math.max(0, differenceInMinutes(now, parseISO(activeWaking.started_at))),
+                    ),
+                  )}
+                  <PencilLine className="h-3 w-3 opacity-70" strokeWidth={1.75} />
+                </button>
+              )}
             </>
           ) : (
             <>
@@ -321,12 +390,29 @@ export default function HomePage() {
 
           {openSession ? (
             openSession.is_night_sleep ? (
-              <button
-                onClick={handleNightAwakening}
-                className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
-              >
-                {t.home.nightAwakening}
-              </button>
+              activeWaking ? (
+                <button
+                  onClick={endNightWaking}
+                  className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
+                >
+                  {t.home.backToSleep}
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={startNightWaking}
+                    className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
+                  >
+                    {t.home.nightAwakening}
+                  </button>
+                  <button
+                    onClick={morningWakeUp}
+                    className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
+                  >
+                    {t.home.morningWake}
+                  </button>
+                </>
+              )
             ) : (
               <button
                 onClick={endSleep}
@@ -335,24 +421,6 @@ export default function HomePage() {
                 {t.home.wokeUp}
               </button>
             )
-          ) : nightAwakeningPending ? (
-            <>
-              <button
-                onClick={() => {
-                  startSleep(true);
-                  setNightAwakeningPending(false);
-                }}
-                className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-amber-800 shadow-sm active:scale-[0.98]"
-              >
-                {t.home.putBackToSleep}
-              </button>
-              <button
-                onClick={() => setNightAwakeningPending(false)}
-                className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
-              >
-                {t.home.wokeUpDoneForNight}
-              </button>
-            </>
           ) : (
             <button
               onClick={() => startSleep(isLastWakeWindow)}
@@ -547,6 +615,17 @@ export default function HomePage() {
         />
       )}
 
+      {editingWaking && (
+        <NightWakingModal
+          waking={editingWaking}
+          onClose={() => setEditingWaking(null)}
+          onSaved={() => {
+            setEditingWaking(null);
+            load();
+          }}
+        />
+      )}
+
       {showFeedingsBreakdown && (
         <div
           className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center"
@@ -635,19 +714,40 @@ export default function HomePage() {
               <p className="py-6 text-center text-sm text-neutral-400">{t.home.noWakeUpsToday}</p>
             ) : (
               <ul className="space-y-2">
-                {todayNightWakeUps.map((w, i) => (
-                  <li
-                    key={i}
-                    className="rounded-xl border border-neutral-200 px-3 py-2.5 dark:border-neutral-800"
-                  >
-                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
-                      {formatTime(w.wokeAt)} – {formatTime(w.backAsleepAt)}
-                    </p>
-                    <p className="text-xs text-neutral-500">
-                      {t.home.awakeFor(formatDuration(w.awakeMinutes))}
-                    </p>
-                  </li>
-                ))}
+                {todayNightWakeUps.map((w, i) => {
+                  const waking = w.id ? nightWakings.find((row) => row.id === w.id) : null;
+                  const body = (
+                    <>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
+                        {formatTime(w.wokeAt)} –{" "}
+                        {w.backAsleepAt ? formatTime(w.backAsleepAt) : t.home.ongoing}
+                      </p>
+                      <p className="text-xs text-neutral-500">
+                        {t.home.awakeFor(formatDuration(w.awakeMinutes))}
+                      </p>
+                    </>
+                  );
+
+                  return (
+                    <li key={w.id ?? `legacy-${i}`}>
+                      {waking ? (
+                        <button
+                          onClick={() => {
+                            setShowWakeUpsBreakdown(false);
+                            setEditingWaking(waking);
+                          }}
+                          className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-left dark:border-neutral-800"
+                        >
+                          {body}
+                        </button>
+                      ) : (
+                        <div className="rounded-xl border border-neutral-200 px-3 py-2.5 dark:border-neutral-800">
+                          {body}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

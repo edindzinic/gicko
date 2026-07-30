@@ -23,7 +23,7 @@ import { DayDetailPanel } from "@/components/DayDetailPanel";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
 import { WeekView } from "@/components/WeekView";
-import { findNightWakeUpEndTimes, formatDuration, sessionDurationMinutes } from "@/lib/time";
+import { collectNightWakeUps, formatDuration, sleepMinutesExcludingWakings } from "@/lib/time";
 import { FEED_TYPE_ICONS } from "@/lib/feedingTypes";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -48,6 +48,7 @@ export default function CalendarPage() {
   const [sessions, setSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [feedings, setFeedings] = useState<Tables<"feedings">[]>([]);
   const [nightSessions, setNightSessions] = useState<Tables<"sleep_sessions">[]>([]);
+  const [nightWakings, setNightWakings] = useState<Tables<"night_wakings">[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [editingSession, setEditingSession] = useState<Tables<"sleep_sessions"> | null>(null);
   const [editingFeeding, setEditingFeeding] = useState<Tables<"feedings"> | null>(null);
@@ -85,7 +86,7 @@ export default function CalendarPage() {
     const start = gridStart.toISOString();
     const end = gridEnd.toISOString();
 
-    const [{ data: s }, { data: f }, { data: nights }] = await Promise.all([
+    const [{ data: s }, { data: f }, { data: nights }, { data: wakings }] = await Promise.all([
       supabase
         .from("sleep_sessions")
         .select("*")
@@ -98,11 +99,17 @@ export default function CalendarPage() {
         .lte("occurred_at", end),
       // Fetched unscoped by month so wake-up chains aren't cut off at range edges.
       supabase.from("sleep_sessions").select("*").eq("is_night_sleep", true),
+      supabase
+        .from("night_wakings")
+        .select("*")
+        .gte("started_at", start)
+        .lte("started_at", end),
     ]);
 
     setSessions(s ?? []);
     setFeedings(f ?? []);
     setNightSessions(nights ?? []);
+    setNightWakings(wakings ?? []);
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [month]);
@@ -119,7 +126,7 @@ export default function CalendarPage() {
       const key = format(new Date(s.started_at), "yyyy-MM-dd");
       const stat =
         map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, solidCount: 0, nightWakeUps: 0 };
-      stat.sleepMinutes += sessionDurationMinutes(s.started_at, s.ended_at);
+      stat.sleepMinutes += sleepMinutesExcludingWakings(s, nightWakings);
       map.set(key, stat);
     }
     for (const f of feedings) {
@@ -133,15 +140,15 @@ export default function CalendarPage() {
       }
       map.set(key, stat);
     }
-    for (const wakeUpEnd of findNightWakeUpEndTimes(nightSessions)) {
-      const key = format(new Date(wakeUpEnd), "yyyy-MM-dd");
+    for (const wakeUp of collectNightWakeUps(nightWakings, nightSessions)) {
+      const key = format(new Date(wakeUp.wokeAt), "yyyy-MM-dd");
       const stat =
         map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, solidCount: 0, nightWakeUps: 0 };
       stat.nightWakeUps += 1;
       map.set(key, stat);
     }
     return map;
-  }, [sessions, feedings, nightSessions]);
+  }, [sessions, feedings, nightSessions, nightWakings]);
 
   function refreshAfterEdit() {
     setEditingSession(null);

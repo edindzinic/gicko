@@ -6,7 +6,7 @@ import { Bed, Droplet, GlassWater, Hash, Milk, Moon, Sun, Timer } from "lucide-r
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { TrendlineChart, type TrendPoint } from "@/components/TrendlineChart";
-import { computeDayStats, findNightWakeUps, formatDuration } from "@/lib/time";
+import { collectNightWakeUps, computeDayStats, formatDuration } from "@/lib/time";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type SleepSession = Tables<"sleep_sessions">;
@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [nightSessions, setNightSessions] = useState<SleepSession[]>([]);
   const [feedings, setFeedings] = useState<Feeding[]>([]);
   const [pumping, setPumping] = useState<PumpingSession[]>([]);
+  const [nightWakings, setNightWakings] = useState<Tables<"night_wakings">[]>([]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -51,7 +52,7 @@ export default function DashboardPage() {
     const bufferedStart = addDays(rangeStart, -1).toISOString();
     const bufferedEnd = addDays(rangeEnd, 1).toISOString();
 
-    const [{ data: s }, { data: nights }, { data: f }, { data: p }] = await Promise.all([
+    const [{ data: s }, { data: nights }, { data: f }, { data: p }, { data: wakings }] = await Promise.all([
       supabase
         .from("sleep_sessions")
         .select("*")
@@ -69,12 +70,18 @@ export default function DashboardPage() {
         .select("*")
         .gte("occurred_at", rangeStart.toISOString())
         .lte("occurred_at", rangeEnd.toISOString()),
+      supabase
+        .from("night_wakings")
+        .select("*")
+        .gte("started_at", bufferedStart)
+        .lte("started_at", bufferedEnd),
     ]);
 
     setSessions(s ?? []);
     setNightSessions(nights ?? []);
     setFeedings(f ?? []);
     setPumping(p ?? []);
+    setNightWakings(wakings ?? []);
     setLoading(false);
   }, [from, to]);
 
@@ -84,7 +91,7 @@ export default function DashboardPage() {
   }, [load]);
 
   const days = parseISO(from) <= parseISO(to) ? eachDayOfInterval({ start: parseISO(from), end: parseISO(to) }) : [];
-  const nightWakeUps = findNightWakeUps(nightSessions);
+  const nightWakeUps = collectNightWakeUps(nightWakings, nightSessions);
 
   const nightSleepPoints: TrendPoint[] = [];
   const dayAwakePoints: TrendPoint[] = [];
@@ -110,6 +117,7 @@ export default function DashboardPage() {
       nightSessions,
       daySessions,
       asOf,
+      nightWakings,
     );
     const napCount = daySessions.filter(
       (sess) => !sess.is_night_sleep && format(parseISO(sess.started_at), "yyyy-MM-dd") === dayKey,

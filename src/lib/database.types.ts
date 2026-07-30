@@ -92,6 +92,44 @@ export type Database = {
           },
         ]
       }
+      night_wakings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ended_at: string | null
+          id: string
+          notes: string | null
+          sleep_session_id: string | null
+          started_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          sleep_session_id?: string | null
+          started_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          sleep_session_id?: string | null
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "night_wakings_sleep_session_id_fkey"
+            columns: ["sleep_session_id"]
+            isOneToOne: false
+            referencedRelation: "sleep_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

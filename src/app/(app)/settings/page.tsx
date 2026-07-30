@@ -9,7 +9,13 @@ import type { Tables } from "@/lib/database.types";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { findNightWakeUpEndTimes, formatDuration, isNightTime, sessionDurationMinutes } from "@/lib/time";
+import {
+  collectNightWakeUps,
+  formatDuration,
+  isNightTime,
+  sessionDurationMinutes,
+  sleepMinutesExcludingWakings,
+} from "@/lib/time";
 
 function toInputValue(date: Date) {
   return format(date, "yyyy-MM-dd");
@@ -133,8 +139,12 @@ export default function SettingsPage() {
       const rangeStart = `${from}T00:00:00`;
       const rangeEnd = `${to}T23:59:59.999`;
 
-      const [{ data: sessions, error: sErr }, { data: feedings, error: fErr }, { data: nights }] =
-        await Promise.all([
+      const [
+        { data: sessions, error: sErr },
+        { data: feedings, error: fErr },
+        { data: nights },
+        { data: wakings },
+      ] = await Promise.all([
           supabase
             .from("sleep_sessions")
             .select("*")
@@ -149,6 +159,12 @@ export default function SettingsPage() {
             .order("occurred_at", { ascending: true }),
           // Fetched unscoped by range so wake-up chains aren't cut off at the edges.
           supabase.from("sleep_sessions").select("*").eq("is_night_sleep", true),
+          supabase
+            .from("night_wakings")
+            .select("*")
+            .gte("started_at", rangeStart)
+            .lte("started_at", rangeEnd)
+            .order("started_at", { ascending: true }),
         ]);
 
       if (sErr || fErr) {
@@ -159,15 +175,23 @@ export default function SettingsPage() {
 
       const XLSX = await import("xlsx");
 
-      const wakeUpEndTimes = new Set(findNightWakeUpEndTimes(nights ?? []));
+      const nightWakings = wakings ?? [];
 
       const sleepRows = (sessions ?? []).map((s) => ({
         Date: format(new Date(s.started_at), "yyyy-MM-dd"),
         "Started at": format(new Date(s.started_at), "HH:mm"),
         "Ended at": s.ended_at ? format(new Date(s.ended_at), "HH:mm") : "still asleep",
         Duration: formatDuration(sessionDurationMinutes(s.started_at, s.ended_at)),
-        "Night wake-up": s.ended_at && wakeUpEndTimes.has(s.ended_at) ? "Yes" : "No",
+        "Sleep excl. wakings": formatDuration(sleepMinutesExcludingWakings(s, nightWakings)),
+        "Night sleep": s.is_night_sleep ? "Yes" : "No",
         Notes: s.notes ?? "",
+      }));
+
+      const wakingRows = collectNightWakeUps(nightWakings, nights ?? []).map((w) => ({
+        Date: format(new Date(w.wokeAt), "yyyy-MM-dd"),
+        "Woke at": format(new Date(w.wokeAt), "HH:mm"),
+        "Back asleep at": w.backAsleepAt ? format(new Date(w.backAsleepAt), "HH:mm") : "still awake",
+        "Awake for": formatDuration(w.awakeMinutes),
       }));
 
       const feedingRows = (feedings ?? []).map((f) => ({
@@ -190,6 +214,11 @@ export default function SettingsPage() {
         workbook,
         XLSX.utils.json_to_sheet(feedingRows),
         "Feedings",
+      );
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(wakingRows),
+        "Night wakings",
       );
 
       XLSX.writeFile(workbook, `gicko-${from}-to-${to}.xlsx`);

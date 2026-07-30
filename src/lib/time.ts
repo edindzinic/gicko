@@ -61,36 +61,81 @@ export function minutesSinceMidnight(iso: string) {
 
 export type NightSleepLike = { started_at: string; ended_at: string | null; is_night_sleep: boolean };
 
-/**
- * Returns the ended_at timestamps that represent a true night wake-up —
- * i.e. the baby went back to sleep afterward — excluding the final
- * awakening of each night (the "morning awakening", which ends the
- * night for good rather than being followed by more sleep).
- */
-export function findNightWakeUpEndTimes(sessions: NightSleepLike[]): string[] {
-  const nights = sessions
-    .filter((s): s is NightSleepLike & { ended_at: string } => s.is_night_sleep && !!s.ended_at)
-    .sort((a, b) => parseISO(a.started_at).getTime() - parseISO(b.started_at).getTime());
+export type NightWakeUp = {
+  wokeAt: string;
+  backAsleepAt: string | null;
+  awakeMinutes: number;
+  /** Set for explicitly logged wakings; absent for ones inferred from legacy split night sessions. */
+  id?: string;
+};
 
-  const wakeUpEnds: string[] = [];
-  for (let i = 0; i < nights.length - 1; i++) {
-    const current = nights[i];
-    const next = nights[i + 1];
-    const gapMinutes = differenceInMinutes(parseISO(next.started_at), parseISO(current.ended_at));
-    if (gapMinutes >= 0 && gapMinutes <= 180) {
-      wakeUpEnds.push(current.ended_at);
-    }
-  }
-  return wakeUpEnds;
+export type NightWakingLike = { id: string; started_at: string; ended_at: string | null };
+
+/**
+ * Merges explicitly logged night wakings with the ones inferred from legacy data.
+ *
+ * Nights used to be stored as several sleep_sessions rows, with a wake-up implied by the
+ * gap between them; they're now one continuous session plus explicit night_wakings rows.
+ * Inference only ever fires on a night that was split into multiple sessions, so old and
+ * new nights can't both produce a wake-up for the same moment.
+ */
+export function collectNightWakeUps(
+  wakings: NightWakingLike[],
+  legacySessions: NightSleepLike[],
+): NightWakeUp[] {
+  const explicit = wakings.map((w) => ({
+    id: w.id,
+    wokeAt: w.started_at,
+    backAsleepAt: w.ended_at,
+    awakeMinutes: w.ended_at
+      ? Math.max(0, differenceInMinutes(parseISO(w.ended_at), parseISO(w.started_at)))
+      : Math.max(0, differenceInMinutes(new Date(), parseISO(w.started_at))),
+  }));
+
+  return [...explicit, ...findNightWakeUps(legacySessions)].sort(
+    (a, b) => parseISO(a.wokeAt).getTime() - parseISO(b.wokeAt).getTime(),
+  );
 }
 
-export type NightWakeUp = { wokeAt: string; backAsleepAt: string; awakeMinutes: number };
+/** Minutes two intervals overlap by. */
+function overlapMinutes(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
+  const start = aStart > bStart ? aStart : bStart;
+  const end = aEnd < bEnd ? aEnd : bEnd;
+  return end > start ? differenceInMinutes(end, start) : 0;
+}
 
 /**
- * Same detection as findNightWakeUpEndTimes, but returns the full picture of each
- * wake-up — when the baby woke, when they went back down, and how long they were up.
+ * A sleep session's duration with any night wakings inside it taken out — a waking
+ * leaves the session open, so its awake time would otherwise count as sleep.
  */
-export function findNightWakeUps(sessions: NightSleepLike[]): NightWakeUp[] {
+export function sleepMinutesExcludingWakings(
+  session: { started_at: string; ended_at: string | null },
+  wakings: NightWakingLike[],
+  asOf: Date = new Date(),
+) {
+  const sessionStart = parseISO(session.started_at);
+  const sessionEnd = session.ended_at ? parseISO(session.ended_at) : asOf;
+  const slept = Math.max(0, differenceInMinutes(sessionEnd, sessionStart));
+  const awake = wakings.reduce(
+    (sum, w) =>
+      sum +
+      overlapMinutes(
+        parseISO(w.started_at),
+        w.ended_at ? parseISO(w.ended_at) : asOf,
+        sessionStart,
+        sessionEnd,
+      ),
+    0,
+  );
+  return Math.max(0, slept - awake);
+}
+
+/**
+ * Recovers wake-ups from legacy nights, which were stored as several sleep sessions:
+ * a short gap between two of them means the baby woke and went back down. The final
+ * awakening of a night is excluded — that's the morning wake, not a night waking.
+ */
+function findNightWakeUps(sessions: NightSleepLike[]): NightWakeUp[] {
   const nights = sessions
     .filter((s): s is NightSleepLike & { ended_at: string } => s.is_night_sleep && !!s.ended_at)
     .sort((a, b) => parseISO(a.started_at).getTime() - parseISO(b.started_at).getTime());
@@ -154,6 +199,7 @@ export function computeDayStats(
   nightSessions: NightSleepLike[],
   daySessions: NightSleepLike[],
   asOf: Date,
+  nightWakings: NightWakingLike[] = [],
 ) {
   const dayStart = startOfDay(parseISO(`${day}T00:00:00`));
   const prevEveningCutoff = addHours(subDays(dayStart, 1), NIGHT_ATTRIBUTION_CUTOFF_HOUR);
@@ -166,8 +212,10 @@ export function computeDayStats(
     })
     .sort((a, b) => parseISO(a.started_at).getTime() - parseISO(b.started_at).getTime());
 
+  // A night waking doesn't end the sleep session, so its awake time is still inside the
+  // session's span and has to come back out of the night-sleep total.
   const nightSleepMinutes = nightChain.reduce(
-    (sum, s) => sum + sessionDurationMinutes(s.started_at, s.ended_at),
+    (sum, s) => sum + sleepMinutesExcludingWakings(s, nightWakings, asOf),
     0,
   );
 
