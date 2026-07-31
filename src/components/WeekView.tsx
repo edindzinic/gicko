@@ -17,6 +17,7 @@ const FEEDING_COLUMN_WIDTH_PX = 18;
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
+type NightWaking = Tables<"night_wakings">;
 
 function pct(minutes: number) {
   return (minutes / 1440) * DAY_HEIGHT;
@@ -61,6 +62,7 @@ export function WeekView({
   const { t } = useLanguage();
   const [sessions, setSessions] = useState<SleepSession[]>([]);
   const [feedings, setFeedings] = useState<Feeding[]>([]);
+  const [nightWakings, setNightWakings] = useState<NightWaking[]>([]);
   const [loading, setLoading] = useState(true);
   const [tapPrompt, setTapPrompt] = useState<{ day: string; minutes: number } | null>(null);
 
@@ -74,7 +76,7 @@ export function WeekView({
     const rangeStart = addDays(startDate, -1).toISOString();
     const rangeEnd = addDays(startDate, visibleDays + 1).toISOString();
 
-    const [{ data: s }, { data: f }] = await Promise.all([
+    const [{ data: s }, { data: f }, { data: w }] = await Promise.all([
       supabase
         .from("sleep_sessions")
         .select("*")
@@ -86,10 +88,16 @@ export function WeekView({
         .select("*")
         .gte("occurred_at", rangeStart)
         .lte("occurred_at", rangeEnd),
+      supabase
+        .from("night_wakings")
+        .select("*")
+        .lte("started_at", rangeEnd)
+        .or(`ended_at.gte.${rangeStart},ended_at.is.null`),
     ]);
 
     setSessions(s ?? []);
     setFeedings(f ?? []);
+    setNightWakings(w ?? []);
     setLoading(false);
   }, [startDate, visibleDays]);
 
@@ -117,6 +125,19 @@ export function WeekView({
       const list = segmentsByDay.get(seg.day) ?? [];
       list.push({ session, startMinutes: seg.startMinutes, endMinutes: seg.endMinutes });
       segmentsByDay.set(seg.day, list);
+    }
+  }
+
+  const wakingsByDay = new Map<
+    string,
+    { waking: NightWaking; startMinutes: number; endMinutes: number }[]
+  >();
+  for (const waking of nightWakings) {
+    for (const seg of splitIntervalByDay(waking.started_at, waking.ended_at)) {
+      if (!visibleDayKeys.has(seg.day)) continue;
+      const list = wakingsByDay.get(seg.day) ?? [];
+      list.push({ waking, startMinutes: seg.startMinutes, endMinutes: seg.endMinutes });
+      wakingsByDay.set(seg.day, list);
     }
   }
 
@@ -163,6 +184,7 @@ export function WeekView({
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
           const segments = segmentsByDay.get(key) ?? [];
+          const dayWakings = wakingsByDay.get(key) ?? [];
           const dayFeedings = feedingsByDay.get(key) ?? [];
           const feedingColumnBottoms: number[] = [];
           const feedingLayout = [...dayFeedings]
@@ -212,6 +234,18 @@ export function WeekView({
                     {height > 16 &&
                       `${session.is_night_sleep ? "🌆" : "🌙"} ${formatDuration(duration)}`}
                   </button>
+                );
+              })}
+
+              {dayWakings.map(({ waking, startMinutes, endMinutes }, i) => {
+                const duration = endMinutes - startMinutes;
+                return (
+                  <div
+                    key={`${waking.id}-${i}`}
+                    title={`${t.timelineView.nightWaking} · ${formatDuration(duration)}`}
+                    className="pointer-events-none absolute inset-x-0.5 z-[5] rounded bg-amber-300 ring-1 ring-amber-500/40"
+                    style={{ top: pct(startMinutes), height: Math.max(pct(duration), 3) }}
+                  />
                 );
               })}
 
@@ -282,6 +316,9 @@ export function WeekView({
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded bg-slate-400" /> {t.timelineView.nap}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded bg-amber-300" /> {t.timelineView.nightWaking}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-full bg-accent" /> {t.timelineView.feeding}

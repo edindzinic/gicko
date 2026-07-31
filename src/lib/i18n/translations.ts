@@ -87,6 +87,7 @@ const en = {
   timelineView: {
     nightSleep: "Night sleep",
     nap: "Nap",
+    nightWaking: "Night waking",
     feeding: "Feeding",
     nothingLogged: (isToday: boolean): string =>
       isToday ? "Nothing logged yet today." : "Nothing logged this day.",
@@ -275,6 +276,7 @@ const bs: Translations = {
   timelineView: {
     nightSleep: "Noćni san",
     nap: "Dremka",
+    nightWaking: "Noćno buđenje",
     feeding: "Hranjenje",
     nothingLogged: (isToday: boolean) =>
       isToday ? "Danas još ništa nije zabilježeno." : "Ovaj dan nema zabilježenog.",
@@ -461,6 +463,7 @@ const de: Translations = {
   timelineView: {
     nightSleep: "Nachtschlaf",
     nap: "Nickerchen",
+    nightWaking: "Nächtliches Aufwachen",
     feeding: "Fütterung",
     nothingLogged: (isToday: boolean) =>
       isToday ? "Heute noch nichts erfasst." : "An diesem Tag nichts erfasst.",

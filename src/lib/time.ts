@@ -131,6 +131,19 @@ export function sleepMinutesExcludingWakings(
 }
 
 /**
+ * The day a night-time event counts toward. Night stats are attributed to the morning
+ * the night ends on, so an event after the evening cutoff belongs to the next day —
+ * a 23:46 waking is part of the night you wake up from tomorrow morning.
+ */
+export function nightAttributionDay(iso: string) {
+  const at = parseISO(iso);
+  return format(
+    at.getHours() >= NIGHT_ATTRIBUTION_CUTOFF_HOUR ? addDays(at, 1) : at,
+    "yyyy-MM-dd",
+  );
+}
+
+/**
  * Recovers wake-ups from legacy nights, which were stored as several sleep sessions:
  * a short gap between two of them means the baby woke and went back down. The final
  * awakening of a night is excluded — that's the morning wake, not a night waking.

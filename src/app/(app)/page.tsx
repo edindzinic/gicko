@@ -16,6 +16,7 @@ import {
   formatDuration,
   formatTime,
   minutesSinceMidnight,
+  nightAttributionDay,
   sessionDurationMinutes,
 } from "@/lib/time";
 import { feedTypeIcon, type FeedType } from "@/lib/feedingTypes";
@@ -234,7 +235,7 @@ export default function HomePage() {
     nightWakings,
   );
   const todayNightWakeUps = collectNightWakeUps(nightWakings, nightSessions).filter(
-    (w) => format(new Date(w.wokeAt), "yyyy-MM-dd") === dayKey,
+    (w) => nightAttributionDay(w.wokeAt) === dayKey,
   );
   const totalMlToday = dayFeedings.reduce((sum, f) => {
     if (f.amount == null) return sum;
@@ -534,6 +535,8 @@ export default function HomePage() {
         onCreateFeeding={(at) => setCreatingFeeding({ at })}
         allowDragCreate={false}
         wakeWindow={wakeWindowBand}
+        nightWakings={nightWakings}
+        onSelectWaking={setEditingWaking}
       />
 
       {feedingModalSleepId !== undefined && (

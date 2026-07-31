@@ -6,7 +6,12 @@ import { Bed, Droplet, GlassWater, Hash, Milk, Moon, Sun, Timer } from "lucide-r
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { TrendlineChart, type TrendPoint } from "@/components/TrendlineChart";
-import { collectNightWakeUps, computeDayStats, formatDuration } from "@/lib/time";
+import {
+  collectNightWakeUps,
+  computeDayStats,
+  formatDuration,
+  nightAttributionDay,
+} from "@/lib/time";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type SleepSession = Tables<"sleep_sessions">;
@@ -122,9 +127,7 @@ export default function DashboardPage() {
     const napCount = daySessions.filter(
       (sess) => !sess.is_night_sleep && format(parseISO(sess.started_at), "yyyy-MM-dd") === dayKey,
     ).length;
-    const dayWakeUps = nightWakeUps.filter(
-      (w) => format(parseISO(w.wokeAt), "yyyy-MM-dd") === dayKey,
-    ).length;
+    const dayWakeUps = nightWakeUps.filter((w) => nightAttributionDay(w.wokeAt) === dayKey).length;
     const dayFeedings = feedings.filter(
       (feeding) => format(parseISO(feeding.occurred_at), "yyyy-MM-dd") === dayKey,
     );

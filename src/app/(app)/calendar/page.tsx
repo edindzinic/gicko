@@ -23,7 +23,12 @@ import { DayDetailPanel } from "@/components/DayDetailPanel";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
 import { WeekView } from "@/components/WeekView";
-import { collectNightWakeUps, formatDuration, sleepMinutesExcludingWakings } from "@/lib/time";
+import {
+  collectNightWakeUps,
+  formatDuration,
+  nightAttributionDay,
+  sleepMinutesExcludingWakings,
+} from "@/lib/time";
 import { FEED_TYPE_ICONS } from "@/lib/feedingTypes";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -99,10 +104,11 @@ export default function CalendarPage() {
         .lte("occurred_at", end),
       // Fetched unscoped by month so wake-up chains aren't cut off at range edges.
       supabase.from("sleep_sessions").select("*").eq("is_night_sleep", true),
+      // Reaches back a day: an evening waking counts toward the next morning's day.
       supabase
         .from("night_wakings")
         .select("*")
-        .gte("started_at", start)
+        .gte("started_at", addDays(gridStart, -1).toISOString())
         .lte("started_at", end),
     ]);
 
@@ -141,7 +147,7 @@ export default function CalendarPage() {
       map.set(key, stat);
     }
     for (const wakeUp of collectNightWakeUps(nightWakings, nightSessions)) {
-      const key = format(new Date(wakeUp.wokeAt), "yyyy-MM-dd");
+      const key = nightAttributionDay(wakeUp.wokeAt);
       const stat =
         map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, solidCount: 0, nightWakeUps: 0 };
       stat.nightWakeUps += 1;

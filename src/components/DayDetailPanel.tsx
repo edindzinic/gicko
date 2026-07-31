@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
+import { NightWakingModal } from "@/components/NightWakingModal";
 import { DayTimeline } from "@/components/DayTimeline";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -22,6 +23,8 @@ export function DayDetailPanel({
   const { t } = useLanguage();
   const [sessions, setSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [feedings, setFeedings] = useState<Tables<"feedings">[]>([]);
+  const [nightWakings, setNightWakings] = useState<Tables<"night_wakings">[]>([]);
+  const [editingWaking, setEditingWaking] = useState<Tables<"night_wakings"> | null>(null);
   const [note, setNote] = useState("");
   const [noteId, setNoteId] = useState<string | null>(null);
   const [savingNote, setSavingNote] = useState(false);
@@ -37,7 +40,7 @@ export function DayDetailPanel({
     const dayStart = startOfDay(dayDate).toISOString();
     const dayEnd = addDays(startOfDay(dayDate), 1).toISOString();
 
-    const [{ data: s }, { data: f }, { data: c }] = await Promise.all([
+    const [{ data: s }, { data: f }, { data: c }, { data: w }] = await Promise.all([
       supabase
         .from("sleep_sessions")
         .select("*")
@@ -51,10 +54,17 @@ export function DayDetailPanel({
         .lte("occurred_at", dayEnd)
         .order("occurred_at", { ascending: true }),
       supabase.from("day_comments").select("*").eq("day", day).maybeSingle(),
+      supabase
+        .from("night_wakings")
+        .select("*")
+        .lte("started_at", dayEnd)
+        .or(`ended_at.gte.${dayStart},ended_at.is.null`)
+        .order("started_at", { ascending: true }),
     ]);
 
     setSessions(s ?? []);
     setFeedings(f ?? []);
+    setNightWakings(w ?? []);
     setNote(c?.body ?? "");
     setNoteId(c?.id ?? null);
     setLoading(false);
@@ -135,6 +145,8 @@ export function DayDetailPanel({
                 onSelectFeeding={setEditingFeeding}
                 onCreateSleep={(start, end) => setAddingSleep({ start, end: end ?? undefined })}
                 onCreateFeeding={(at) => setAddingFeeding({ at })}
+                nightWakings={nightWakings}
+                onSelectWaking={setEditingWaking}
               />
             </div>
 
@@ -172,6 +184,18 @@ export function DayDetailPanel({
           onClose={() => setEditingFeeding(null)}
           onSaved={() => {
             setEditingFeeding(null);
+            load();
+            onEventsChanged?.();
+          }}
+        />
+      )}
+
+      {editingWaking && (
+        <NightWakingModal
+          waking={editingWaking}
+          onClose={() => setEditingWaking(null)}
+          onSaved={() => {
+            setEditingWaking(null);
             load();
             onEventsChanged?.();
           }}

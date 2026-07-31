@@ -9,6 +9,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
+type NightWaking = Tables<"night_wakings">;
 
 const HOUR_HEIGHT = 56; // px per hour
 const DAY_HEIGHT = HOUR_HEIGHT * 24;
@@ -54,10 +55,14 @@ export function DayTimeline({
   isToday = false,
   allowDragCreate = true,
   wakeWindow,
+  nightWakings = [],
+  onSelectWaking,
 }: {
   day: string; // yyyy-MM-dd
   sessions: SleepSession[];
   feedings: Feeding[];
+  nightWakings?: NightWaking[];
+  onSelectWaking?: (waking: NightWaking) => void;
   onSelectSession: (session: SleepSession) => void;
   onSelectFeeding: (feeding: Feeding) => void;
   onCreateSleep: (start: Date, end: Date | null) => void;
@@ -119,6 +124,12 @@ export function DayTimeline({
     splitIntervalByDay(session.started_at, session.ended_at)
       .filter((seg) => seg.day === day)
       .map((seg) => ({ session, ...seg })),
+  );
+
+  const wakingSegments = nightWakings.flatMap((waking) =>
+    splitIntervalByDay(waking.started_at, waking.ended_at)
+      .filter((seg) => seg.day === day)
+      .map((seg) => ({ waking, ...seg })),
   );
 
   const isEmpty = segments.length === 0 && feedings.length === 0;
@@ -211,6 +222,24 @@ export function DayTimeline({
                     {formatDuration(endMinutes - startMinutes)}
                   </div>
                 )}
+              </button>
+            );
+          })}
+
+          {wakingSegments.map(({ waking, startMinutes, endMinutes }, i) => {
+            const top = topForMinutes(startMinutes);
+            const height = Math.max(topForMinutes(endMinutes - startMinutes), 4);
+            const label = `🌙 ${formatDuration(endMinutes - startMinutes)}`;
+            return (
+              <button
+                key={`${waking.id}-${i}`}
+                onClick={() => onSelectWaking?.(waking)}
+                disabled={!onSelectWaking}
+                title={`${t.timelineView.nightWaking} · ${formatDuration(endMinutes - startMinutes)}`}
+                className="absolute inset-x-2 z-[5] overflow-hidden rounded-md bg-amber-300 px-2 text-left text-[10px] font-medium whitespace-nowrap text-amber-950 ring-1 ring-amber-500/40"
+                style={{ top, height }}
+              >
+                {height > 12 && label}
               </button>
             );
           })}
