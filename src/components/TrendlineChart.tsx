@@ -19,6 +19,7 @@ export function TrendlineChart({
   formatValue,
   averageLabel,
   noDataLabel,
+  averageMode = "all",
 }: {
   icon: LucideIcon;
   title: string;
@@ -26,13 +27,21 @@ export function TrendlineChart({
   formatValue: (value: number) => string;
   averageLabel: string;
   noDataLabel: string;
+  /**
+   * "nonZero" averages only the days that actually have a value — for metrics where zero
+   * means "didn't happen" rather than a real measurement, so empty days shouldn't drag
+   * the average down.
+   */
+  averageMode?: "all" | "nonZero";
 }) {
   const [selected, setSelected] = useState<number | null>(null);
 
   const values = points.map((p) => p.value);
   const hasData = values.some((v) => v > 0);
   const maxValue = Math.max(...values, 1);
-  const average = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+  const averaged = averageMode === "nonZero" ? values.filter((v) => v > 0) : values;
+  const average =
+    averaged.length > 0 ? averaged.reduce((a, b) => a + b, 0) / averaged.length : 0;
 
   const stepX = points.length > 1 ? (CHART_WIDTH - PAD_X * 2) / (points.length - 1) : 0;
   const coords = points.map((p, i) => ({

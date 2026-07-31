@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { addDays, eachDayOfInterval, endOfDay, format, isToday, parseISO, startOfDay, subDays } from "date-fns";
-import { Bed, Droplet, GlassWater, Hash, Milk, Moon, Sun, Timer } from "lucide-react";
+import { Bed, Droplet, GlassWater, Hash, Hourglass, Milk, Moon, Sun, Timer } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { TrendlineChart, type TrendPoint } from "@/components/TrendlineChart";
@@ -103,6 +103,7 @@ export default function DashboardPage() {
   const napMinutesPoints: TrendPoint[] = [];
   const napCountPoints: TrendPoint[] = [];
   const wakeUpPoints: TrendPoint[] = [];
+  const wakeUpLengthPoints: TrendPoint[] = [];
   const feedingPoints: TrendPoint[] = [];
   const feedingMlPoints: TrendPoint[] = [];
   const pumpingPoints: TrendPoint[] = [];
@@ -127,7 +128,11 @@ export default function DashboardPage() {
     const napCount = daySessions.filter(
       (sess) => !sess.is_night_sleep && format(parseISO(sess.started_at), "yyyy-MM-dd") === dayKey,
     ).length;
-    const dayWakeUps = nightWakeUps.filter((w) => nightAttributionDay(w.wokeAt) === dayKey).length;
+    const dayWakeUpList = nightWakeUps.filter((w) => nightAttributionDay(w.wokeAt) === dayKey);
+    const dayWakeUps = dayWakeUpList.length;
+    const dayWakeUpAvgMinutes = dayWakeUps
+      ? dayWakeUpList.reduce((sum, w) => sum + w.awakeMinutes, 0) / dayWakeUps
+      : 0;
     const dayFeedings = feedings.filter(
       (feeding) => format(parseISO(feeding.occurred_at), "yyyy-MM-dd") === dayKey,
     );
@@ -145,6 +150,7 @@ export default function DashboardPage() {
     napMinutesPoints.push({ day: dayKey, value: napMinutes });
     napCountPoints.push({ day: dayKey, value: napCount });
     wakeUpPoints.push({ day: dayKey, value: dayWakeUps });
+    wakeUpLengthPoints.push({ day: dayKey, value: dayWakeUpAvgMinutes });
     feedingPoints.push({ day: dayKey, value: dayFeedingsCount });
     feedingMlPoints.push({ day: dayKey, value: dayFeedingMl });
     pumpingPoints.push({ day: dayKey, value: dayPumpingMl });
@@ -227,6 +233,15 @@ export default function DashboardPage() {
             formatValue={formatCount}
             averageLabel={t.dashboard.average}
             noDataLabel={t.dashboard.noData}
+          />
+          <TrendlineChart
+            icon={Hourglass}
+            title={t.dashboard.wakeUpLength}
+            points={wakeUpLengthPoints}
+            formatValue={formatDuration}
+            averageLabel={t.dashboard.average}
+            noDataLabel={t.dashboard.noData}
+            averageMode="nonZero"
           />
           <TrendlineChart
             icon={Milk}

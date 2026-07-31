@@ -76,6 +76,7 @@ const en = {
   dashboard: {
     title: "Dashboards",
     napsCount: "Number of naps",
+    wakeUpLength: "Avg night waking length",
     feedingsMl: "Total ml eaten",
     average: "Avg",
     noData: "No data in this range.",
@@ -265,6 +266,7 @@ const bs: Translations = {
   dashboard: {
     title: "Statistika",
     napsCount: "Broj dremki",
+    wakeUpLength: "Prosječno trajanje buđenja",
     feedingsMl: "Ukupno ml pojedeno",
     average: "Prosjek",
     noData: "Nema podataka u ovom periodu.",
@@ -452,6 +454,7 @@ const de: Translations = {
   dashboard: {
     title: "Statistiken",
     napsCount: "Anzahl Nickerchen",
+    wakeUpLength: "Ø Dauer nächtliches Aufwachen",
     feedingsMl: "Gesamt ml gegessen",
     average: "Ø",
     noData: "Keine Daten in diesem Zeitraum.",
