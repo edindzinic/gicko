@@ -57,12 +57,15 @@ export function DayTimeline({
   wakeWindow,
   nightWakings = [],
   onSelectWaking,
+  onCreateWaking,
 }: {
   day: string; // yyyy-MM-dd
   sessions: SleepSession[];
   feedings: Feeding[];
   nightWakings?: NightWaking[];
   onSelectWaking?: (waking: NightWaking) => void;
+  /** Provide to offer "log a night waking" in the tap-to-create prompt. */
+  onCreateWaking?: (at: Date) => void;
   onSelectSession: (session: SleepSession) => void;
   onSelectFeeding: (feeding: Feeding) => void;
   onCreateSleep: (start: Date, end: Date | null) => void;
@@ -303,6 +306,17 @@ export function DayTimeline({
                     {t.actions.logFeeding}
                   </button>
                 </div>
+                {onCreateWaking && (
+                  <button
+                    onClick={() => {
+                      onCreateWaking(minutesToDate(tapPrompt));
+                      setTapPrompt(null);
+                    }}
+                    className="mt-2 w-full rounded-lg bg-amber-300 px-2 py-1.5 text-left text-xs font-medium whitespace-nowrap text-amber-950"
+                  >
+                    {t.actions.logNightWaking}
+                  </button>
+                )}
               </div>
             </>
           )}

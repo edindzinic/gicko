@@ -49,6 +49,8 @@ export function WeekView({
   onSelectDay,
   onCreateSleep,
   onCreateFeeding,
+  onCreateWaking,
+  onSelectWaking,
 }: {
   startDate: Date;
   /** Number of day columns to render (e.g. 3 on mobile, 7 on desktop). */
@@ -58,6 +60,9 @@ export function WeekView({
   onSelectDay: (day: string) => void;
   onCreateSleep: (day: string, start: Date, end: Date | null) => void;
   onCreateFeeding: (day: string, at: Date) => void;
+  /** Provide to offer "log a night waking" in the tap-to-create prompt. */
+  onCreateWaking?: (day: string, at: Date) => void;
+  onSelectWaking?: (waking: NightWaking) => void;
 }) {
   const { t } = useLanguage();
   const [sessions, setSessions] = useState<SleepSession[]>([]);
@@ -240,10 +245,12 @@ export function WeekView({
               {dayWakings.map(({ waking, startMinutes, endMinutes }, i) => {
                 const duration = endMinutes - startMinutes;
                 return (
-                  <div
+                  <button
                     key={`${waking.id}-${i}`}
+                    onClick={() => onSelectWaking?.(waking)}
+                    disabled={!onSelectWaking}
                     title={`${t.timelineView.nightWaking} · ${formatDuration(duration)}`}
-                    className="pointer-events-none absolute inset-x-0.5 z-[5] rounded bg-amber-300 ring-1 ring-amber-500/40"
+                    className="absolute inset-x-0.5 z-[5] rounded bg-amber-300 ring-1 ring-amber-500/40"
                     style={{ top: pct(startMinutes), height: Math.max(pct(duration), 3) }}
                   />
                 );
@@ -302,6 +309,20 @@ export function WeekView({
                     >
                       {t.actions.logFeeding}
                     </button>
+                    {onCreateWaking && (
+                      <button
+                        onClick={() => {
+                          onCreateWaking(
+                            tapPrompt.day,
+                            minutesToDate(tapPrompt.day, tapPrompt.minutes),
+                          );
+                          setTapPrompt(null);
+                        }}
+                        className="mt-1 block w-full rounded-lg bg-amber-300 px-1.5 py-1 text-left text-[10px] font-medium whitespace-nowrap text-amber-950"
+                      >
+                        {t.actions.logNightWaking}
+                      </button>
+                    )}
                   </div>
                 </>
               )}

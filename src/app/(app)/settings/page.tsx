@@ -142,7 +142,6 @@ export default function SettingsPage() {
       const [
         { data: sessions, error: sErr },
         { data: feedings, error: fErr },
-        { data: nights },
         { data: wakings },
       ] = await Promise.all([
           supabase
@@ -157,8 +156,6 @@ export default function SettingsPage() {
             .gte("occurred_at", rangeStart)
             .lte("occurred_at", rangeEnd)
             .order("occurred_at", { ascending: true }),
-          // Fetched unscoped by range so wake-up chains aren't cut off at the edges.
-          supabase.from("sleep_sessions").select("*").eq("is_night_sleep", true),
           supabase
             .from("night_wakings")
             .select("*")
@@ -187,7 +184,7 @@ export default function SettingsPage() {
         Notes: s.notes ?? "",
       }));
 
-      const wakingRows = collectNightWakeUps(nightWakings, nights ?? []).map((w) => ({
+      const wakingRows = collectNightWakeUps(nightWakings).map((w) => ({
         Date: format(new Date(w.wokeAt), "yyyy-MM-dd"),
         "Woke at": format(new Date(w.wokeAt), "HH:mm"),
         "Back asleep at": w.backAsleepAt ? format(new Date(w.backAsleepAt), "HH:mm") : "still awake",

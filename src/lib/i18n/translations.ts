@@ -29,6 +29,7 @@ const en = {
   actions: {
     logSleep: "😴 Log sleep",
     logFeeding: "🍼 Log feeding",
+    logNightWaking: "🌙 Log night waking",
   },
   home: {
     previousDay: "Previous day",
@@ -138,6 +139,7 @@ const en = {
   },
   nightWakingModal: {
     editTitle: "Edit night waking",
+    logTitle: "Log a night waking",
     wokeAt: "Woke at",
     backAsleepAt: "Back asleep at",
     leaveBlankHint: "Leave both blank if he's still awake.",
@@ -219,6 +221,7 @@ const bs: Translations = {
   actions: {
     logSleep: "😴 Zabilježi san",
     logFeeding: "🍼 Zabilježi hranjenje",
+    logNightWaking: "🌙 Zabilježi buđenje",
   },
   home: {
     previousDay: "Prethodni dan",
@@ -328,6 +331,7 @@ const bs: Translations = {
   },
   nightWakingModal: {
     editTitle: "Uredi noćno buđenje",
+    logTitle: "Zabilježi noćno buđenje",
     wokeAt: "Probudio se u",
     backAsleepAt: "Ponovo zaspao u",
     leaveBlankHint: "Ostavite oba prazna ako je još budan.",
@@ -407,6 +411,7 @@ const de: Translations = {
   actions: {
     logSleep: "😴 Schlaf erfassen",
     logFeeding: "🍼 Fütterung erfassen",
+    logNightWaking: "🌙 Aufwachen erfassen",
   },
   home: {
     previousDay: "Vorheriger Tag",
@@ -516,6 +521,7 @@ const de: Translations = {
   },
   nightWakingModal: {
     editTitle: "Nächtliches Aufwachen bearbeiten",
+    logTitle: "Nächtliches Aufwachen erfassen",
     wokeAt: "Aufgewacht um",
     backAsleepAt: "Wieder eingeschlafen um",
     leaveBlankHint: "Beide leer lassen, falls er noch wach ist.",

@@ -62,39 +62,27 @@ export function minutesSinceMidnight(iso: string) {
 export type NightSleepLike = { started_at: string; ended_at: string | null; is_night_sleep: boolean };
 
 export type NightWakeUp = {
+  id: string;
   wokeAt: string;
   backAsleepAt: string | null;
   awakeMinutes: number;
-  /** Set for explicitly logged wakings; absent for ones inferred from legacy split night sessions. */
-  id?: string;
 };
 
 export type NightWakingLike = { id: string; started_at: string; ended_at: string | null };
 
-/**
- * Merges explicitly logged night wakings with the ones inferred from legacy data.
- *
- * Nights used to be stored as several sleep_sessions rows, with a wake-up implied by the
- * gap between them; they're now one continuous session plus explicit night_wakings rows.
- * Inference only ever fires on a night that was split into multiple sessions, so old and
- * new nights can't both produce a wake-up for the same moment.
- */
-export function collectNightWakeUps(
-  wakings: NightWakingLike[],
-  legacySessions: NightSleepLike[],
-): NightWakeUp[] {
-  const explicit = wakings.map((w) => ({
-    id: w.id,
-    wokeAt: w.started_at,
-    backAsleepAt: w.ended_at,
-    awakeMinutes: w.ended_at
-      ? Math.max(0, differenceInMinutes(parseISO(w.ended_at), parseISO(w.started_at)))
-      : Math.max(0, differenceInMinutes(new Date(), parseISO(w.started_at))),
-  }));
-
-  return [...explicit, ...findNightWakeUps(legacySessions)].sort(
-    (a, b) => parseISO(a.wokeAt).getTime() - parseISO(b.wokeAt).getTime(),
-  );
+/** Night wakings in the order they happened, with how long each one lasted. */
+export function collectNightWakeUps(wakings: NightWakingLike[]): NightWakeUp[] {
+  return wakings
+    .map((w) => ({
+      id: w.id,
+      wokeAt: w.started_at,
+      backAsleepAt: w.ended_at,
+      awakeMinutes: Math.max(
+        0,
+        differenceInMinutes(w.ended_at ? parseISO(w.ended_at) : new Date(), parseISO(w.started_at)),
+      ),
+    }))
+    .sort((a, b) => parseISO(a.wokeAt).getTime() - parseISO(b.wokeAt).getTime());
 }
 
 /** Minutes two intervals overlap by. */
@@ -141,32 +129,6 @@ export function nightAttributionDay(iso: string) {
     at.getHours() >= NIGHT_ATTRIBUTION_CUTOFF_HOUR ? addDays(at, 1) : at,
     "yyyy-MM-dd",
   );
-}
-
-/**
- * Recovers wake-ups from legacy nights, which were stored as several sleep sessions:
- * a short gap between two of them means the baby woke and went back down. The final
- * awakening of a night is excluded — that's the morning wake, not a night waking.
- */
-function findNightWakeUps(sessions: NightSleepLike[]): NightWakeUp[] {
-  const nights = sessions
-    .filter((s): s is NightSleepLike & { ended_at: string } => s.is_night_sleep && !!s.ended_at)
-    .sort((a, b) => parseISO(a.started_at).getTime() - parseISO(b.started_at).getTime());
-
-  const wakeUps: NightWakeUp[] = [];
-  for (let i = 0; i < nights.length - 1; i++) {
-    const current = nights[i];
-    const next = nights[i + 1];
-    const gapMinutes = differenceInMinutes(parseISO(next.started_at), parseISO(current.ended_at));
-    if (gapMinutes >= 0 && gapMinutes <= 180) {
-      wakeUps.push({
-        wokeAt: current.ended_at,
-        backAsleepAt: next.started_at,
-        awakeMinutes: gapMinutes,
-      });
-    }
-  }
-  return wakeUps;
 }
 
 export type DaySegment = { day: string; startMinutes: number; endMinutes: number };

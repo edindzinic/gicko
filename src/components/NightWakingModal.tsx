@@ -8,22 +8,27 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function NightWakingModal({
   waking,
+  defaultStart,
+  defaultEnd,
   onClose,
   onSaved,
 }: {
-  waking: Tables<"night_wakings">;
+  waking?: Tables<"night_wakings">;
+  /** Prefilled start when logging a new waking (e.g. from tapping the timeline). */
+  defaultStart?: Date;
+  defaultEnd?: Date;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const { t } = useLanguage();
-  const [startedDate, setStartedDate] = useState(() => toDateInputValue(waking.started_at));
-  const [startedTime, setStartedTime] = useState(() => toTimeInputValue(waking.started_at));
-  const [endedDate, setEndedDate] = useState(() =>
-    waking.ended_at ? toDateInputValue(waking.ended_at) : "",
-  );
-  const [endedTime, setEndedTime] = useState(() =>
-    waking.ended_at ? toTimeInputValue(waking.ended_at) : "",
-  );
+  const isEditing = !!waking;
+  const initialStart = waking?.started_at ?? defaultStart ?? new Date();
+  const initialEnd = waking ? waking.ended_at : (defaultEnd ?? null);
+
+  const [startedDate, setStartedDate] = useState(() => toDateInputValue(initialStart));
+  const [startedTime, setStartedTime] = useState(() => toTimeInputValue(initialStart));
+  const [endedDate, setEndedDate] = useState(() => (initialEnd ? toDateInputValue(initialEnd) : ""));
+  const [endedTime, setEndedTime] = useState(() => (initialEnd ? toTimeInputValue(initialEnd) : ""));
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -40,10 +45,9 @@ export function NightWakingModal({
         endedDate && endedTime ? combineDateAndTime(endedDate, endedTime).toISOString() : null,
     };
 
-    const { error: saveError } = await supabase
-      .from("night_wakings")
-      .update(payload)
-      .eq("id", waking.id);
+    const { error: saveError } = isEditing
+      ? await supabase.from("night_wakings").update(payload).eq("id", waking.id)
+      : await supabase.from("night_wakings").insert(payload);
 
     setSaving(false);
     if (saveError) {
@@ -54,6 +58,7 @@ export function NightWakingModal({
   }
 
   async function handleDelete() {
+    if (!waking) return;
     setDeleting(true);
     const supabase = createClient();
     const { error: deleteError } = await supabase
@@ -81,7 +86,7 @@ export function NightWakingModal({
         className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-neutral-950"
       >
         <h2 className="mb-4 text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-          {t.nightWakingModal.editTitle}
+          {isEditing ? t.nightWakingModal.editTitle : t.nightWakingModal.logTitle}
         </h2>
 
         <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -139,33 +144,35 @@ export function NightWakingModal({
           </button>
         </div>
 
-        <div className="mt-3">
-          {confirmingDelete ? (
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <span className="text-neutral-500">{t.nightWakingModal.deleteConfirmQuestion}</span>
+        {isEditing && (
+          <div className="mt-3">
+            {confirmingDelete ? (
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <span className="text-neutral-500">{t.nightWakingModal.deleteConfirmQuestion}</span>
+                <button
+                  onClick={() => setConfirmingDelete(false)}
+                  className="rounded-lg px-2 py-1 text-neutral-500"
+                >
+                  {t.common.no}
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="rounded-lg bg-red-600 px-3 py-1 font-medium text-white disabled:opacity-50"
+                >
+                  {deleting ? t.nightWakingModal.deleting : t.common.yesDelete}
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={() => setConfirmingDelete(false)}
-                className="rounded-lg px-2 py-1 text-neutral-500"
+                onClick={() => setConfirmingDelete(true)}
+                className="w-full py-1 text-center text-sm text-red-600"
               >
-                {t.common.no}
+                {t.nightWakingModal.deleteWaking}
               </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="rounded-lg bg-red-600 px-3 py-1 font-medium text-white disabled:opacity-50"
-              >
-                {deleting ? t.nightWakingModal.deleting : t.common.yesDelete}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setConfirmingDelete(true)}
-              className="w-full py-1 text-center text-sm text-red-600"
-            >
-              {t.nightWakingModal.deleteWaking}
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

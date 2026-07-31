@@ -96,7 +96,7 @@ export default function DashboardPage() {
   }, [load]);
 
   const days = parseISO(from) <= parseISO(to) ? eachDayOfInterval({ start: parseISO(from), end: parseISO(to) }) : [];
-  const nightWakeUps = collectNightWakeUps(nightWakings, nightSessions);
+  const nightWakeUps = collectNightWakeUps(nightWakings);
 
   const nightSleepPoints: TrendPoint[] = [];
   const dayAwakePoints: TrendPoint[] = [];

@@ -25,6 +25,7 @@ export function DayDetailPanel({
   const [feedings, setFeedings] = useState<Tables<"feedings">[]>([]);
   const [nightWakings, setNightWakings] = useState<Tables<"night_wakings">[]>([]);
   const [editingWaking, setEditingWaking] = useState<Tables<"night_wakings"> | null>(null);
+  const [addingWaking, setAddingWaking] = useState<{ at: Date } | null>(null);
   const [note, setNote] = useState("");
   const [noteId, setNoteId] = useState<string | null>(null);
   const [savingNote, setSavingNote] = useState(false);
@@ -147,6 +148,7 @@ export function DayDetailPanel({
                 onCreateFeeding={(at) => setAddingFeeding({ at })}
                 nightWakings={nightWakings}
                 onSelectWaking={setEditingWaking}
+                onCreateWaking={(at) => setAddingWaking({ at })}
               />
             </div>
 
@@ -196,6 +198,18 @@ export function DayDetailPanel({
           onClose={() => setEditingWaking(null)}
           onSaved={() => {
             setEditingWaking(null);
+            load();
+            onEventsChanged?.();
+          }}
+        />
+      )}
+
+      {addingWaking && (
+        <NightWakingModal
+          defaultStart={addingWaking.at}
+          onClose={() => setAddingWaking(null)}
+          onSaved={() => {
+            setAddingWaking(null);
             load();
             onEventsChanged?.();
           }}

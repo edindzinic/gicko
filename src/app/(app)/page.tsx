@@ -44,6 +44,7 @@ export default function HomePage() {
   const [nightWakings, setNightWakings] = useState<NightWaking[]>([]);
   const [activeWaking, setActiveWaking] = useState<NightWaking | null>(null);
   const [editingWaking, setEditingWaking] = useState<NightWaking | null>(null);
+  const [creatingWaking, setCreatingWaking] = useState<{ at: Date } | null>(null);
   const [editingSession, setEditingSession] = useState<SleepSession | null>(null);
   const [editingFeeding, setEditingFeeding] = useState<Feeding | null>(null);
   const [creatingSleep, setCreatingSleep] = useState<{ start: Date; end: Date | null } | null>(
@@ -234,7 +235,7 @@ export default function HomePage() {
     viewingToday ? new Date() : endOfDay(selectedDate),
     nightWakings,
   );
-  const todayNightWakeUps = collectNightWakeUps(nightWakings, nightSessions).filter(
+  const todayNightWakeUps = collectNightWakeUps(nightWakings).filter(
     (w) => nightAttributionDay(w.wokeAt) === dayKey,
   );
   const totalMlToday = dayFeedings.reduce((sum, f) => {
@@ -537,6 +538,7 @@ export default function HomePage() {
         wakeWindow={wakeWindowBand}
         nightWakings={nightWakings}
         onSelectWaking={setEditingWaking}
+        onCreateWaking={(at) => setCreatingWaking({ at })}
       />
 
       {feedingModalSleepId !== undefined && (
@@ -624,6 +626,17 @@ export default function HomePage() {
           onClose={() => setEditingWaking(null)}
           onSaved={() => {
             setEditingWaking(null);
+            load();
+          }}
+        />
+      )}
+
+      {creatingWaking && (
+        <NightWakingModal
+          defaultStart={creatingWaking.at}
+          onClose={() => setCreatingWaking(null)}
+          onSaved={() => {
+            setCreatingWaking(null);
             load();
           }}
         />
@@ -717,37 +730,26 @@ export default function HomePage() {
               <p className="py-6 text-center text-sm text-neutral-400">{t.home.noWakeUpsToday}</p>
             ) : (
               <ul className="space-y-2">
-                {todayNightWakeUps.map((w, i) => {
-                  const waking = w.id ? nightWakings.find((row) => row.id === w.id) : null;
-                  const body = (
-                    <>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
-                        {formatTime(w.wokeAt)} –{" "}
-                        {w.backAsleepAt ? formatTime(w.backAsleepAt) : t.home.ongoing}
-                      </p>
-                      <p className="text-xs text-neutral-500">
-                        {t.home.awakeFor(formatDuration(w.awakeMinutes))}
-                      </p>
-                    </>
-                  );
-
+                {todayNightWakeUps.map((w) => {
+                  const waking = nightWakings.find((row) => row.id === w.id);
+                  if (!waking) return null;
                   return (
-                    <li key={w.id ?? `legacy-${i}`}>
-                      {waking ? (
-                        <button
-                          onClick={() => {
-                            setShowWakeUpsBreakdown(false);
-                            setEditingWaking(waking);
-                          }}
-                          className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-left dark:border-neutral-800"
-                        >
-                          {body}
-                        </button>
-                      ) : (
-                        <div className="rounded-xl border border-neutral-200 px-3 py-2.5 dark:border-neutral-800">
-                          {body}
-                        </div>
-                      )}
+                    <li key={w.id}>
+                      <button
+                        onClick={() => {
+                          setShowWakeUpsBreakdown(false);
+                          setEditingWaking(waking);
+                        }}
+                        className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-left dark:border-neutral-800"
+                      >
+                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
+                          {formatTime(w.wokeAt)} –{" "}
+                          {w.backAsleepAt ? formatTime(w.backAsleepAt) : t.home.ongoing}
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          {t.home.awakeFor(formatDuration(w.awakeMinutes))}
+                        </p>
+                      </button>
                     </li>
                   );
                 })}

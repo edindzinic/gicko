@@ -23,6 +23,7 @@ import { DayDetailPanel } from "@/components/DayDetailPanel";
 import { FeedingModal } from "@/components/FeedingModal";
 import { SleepEditModal } from "@/components/SleepEditModal";
 import { WeekView } from "@/components/WeekView";
+import { NightWakingModal } from "@/components/NightWakingModal";
 import {
   collectNightWakeUps,
   formatDuration,
@@ -52,7 +53,6 @@ export default function CalendarPage() {
   );
   const [sessions, setSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [feedings, setFeedings] = useState<Tables<"feedings">[]>([]);
-  const [nightSessions, setNightSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [nightWakings, setNightWakings] = useState<Tables<"night_wakings">[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [editingSession, setEditingSession] = useState<Tables<"sleep_sessions"> | null>(null);
@@ -61,6 +61,8 @@ export default function CalendarPage() {
     null,
   );
   const [creatingFeeding, setCreatingFeeding] = useState<{ at: Date } | null>(null);
+  const [creatingWaking, setCreatingWaking] = useState<{ at: Date } | null>(null);
+  const [editingWaking, setEditingWaking] = useState<Tables<"night_wakings"> | null>(null);
   const [loading, setLoading] = useState(true);
   const [weekRefreshKey, setWeekRefreshKey] = useState(0);
   // Matches Tailwind's `sm` breakpoint, used elsewhere in this app for mobile/desktop layout switches.
@@ -91,7 +93,7 @@ export default function CalendarPage() {
     const start = gridStart.toISOString();
     const end = gridEnd.toISOString();
 
-    const [{ data: s }, { data: f }, { data: nights }, { data: wakings }] = await Promise.all([
+    const [{ data: s }, { data: f }, { data: wakings }] = await Promise.all([
       supabase
         .from("sleep_sessions")
         .select("*")
@@ -102,8 +104,6 @@ export default function CalendarPage() {
         .select("*")
         .gte("occurred_at", start)
         .lte("occurred_at", end),
-      // Fetched unscoped by month so wake-up chains aren't cut off at range edges.
-      supabase.from("sleep_sessions").select("*").eq("is_night_sleep", true),
       // Reaches back a day: an evening waking counts toward the next morning's day.
       supabase
         .from("night_wakings")
@@ -114,7 +114,6 @@ export default function CalendarPage() {
 
     setSessions(s ?? []);
     setFeedings(f ?? []);
-    setNightSessions(nights ?? []);
     setNightWakings(wakings ?? []);
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -146,7 +145,7 @@ export default function CalendarPage() {
       }
       map.set(key, stat);
     }
-    for (const wakeUp of collectNightWakeUps(nightWakings, nightSessions)) {
+    for (const wakeUp of collectNightWakeUps(nightWakings)) {
       const key = nightAttributionDay(wakeUp.wokeAt);
       const stat =
         map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, solidCount: 0, nightWakeUps: 0 };
@@ -154,13 +153,15 @@ export default function CalendarPage() {
       map.set(key, stat);
     }
     return map;
-  }, [sessions, feedings, nightSessions, nightWakings]);
+  }, [sessions, feedings, nightWakings]);
 
   function refreshAfterEdit() {
     setEditingSession(null);
     setEditingFeeding(null);
     setCreatingSleep(null);
     setCreatingFeeding(null);
+    setCreatingWaking(null);
+    setEditingWaking(null);
     load();
     setWeekRefreshKey((k) => k + 1);
   }
@@ -283,6 +284,8 @@ export default function CalendarPage() {
           onSelectFeeding={setEditingFeeding}
           onCreateSleep={(_day, start, end) => setCreatingSleep({ start, end })}
           onCreateFeeding={(_day, at) => setCreatingFeeding({ at })}
+          onCreateWaking={(_day, at) => setCreatingWaking({ at })}
+          onSelectWaking={setEditingWaking}
         />
       )}
 
@@ -326,6 +329,22 @@ export default function CalendarPage() {
         <FeedingModal
           defaultDateTime={creatingFeeding.at}
           onClose={() => setCreatingFeeding(null)}
+          onSaved={refreshAfterEdit}
+        />
+      )}
+
+      {creatingWaking && (
+        <NightWakingModal
+          defaultStart={creatingWaking.at}
+          onClose={() => setCreatingWaking(null)}
+          onSaved={refreshAfterEdit}
+        />
+      )}
+
+      {editingWaking && (
+        <NightWakingModal
+          waking={editingWaking}
+          onClose={() => setEditingWaking(null)}
           onSaved={refreshAfterEdit}
         />
       )}
