@@ -40,6 +40,7 @@ export function DayDetailPanel({
     const dayDate = parseISO(`${day}T00:00:00`);
     const dayStart = startOfDay(dayDate).toISOString();
     const dayEnd = addDays(startOfDay(dayDate), 1).toISOString();
+    const wakingsFrom = addDays(startOfDay(dayDate), -1).toISOString();
 
     const [{ data: s }, { data: f }, { data: c }, { data: w }] = await Promise.all([
       supabase
@@ -55,11 +56,13 @@ export function DayDetailPanel({
         .lte("occurred_at", dayEnd)
         .order("occurred_at", { ascending: true }),
       supabase.from("day_comments").select("*").eq("day", day).maybeSingle(),
+      // Reaches back a day so wakings from the evening side of last night are included —
+      // they sit inside the session shown here and have to come out of its sleep total.
       supabase
         .from("night_wakings")
         .select("*")
         .lte("started_at", dayEnd)
-        .or(`ended_at.gte.${dayStart},ended_at.is.null`)
+        .or(`ended_at.gte.${wakingsFrom},ended_at.is.null`)
         .order("started_at", { ascending: true }),
     ]);
 

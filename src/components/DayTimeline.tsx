@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { addMinutes, parseISO } from "date-fns";
 import type { Tables } from "@/lib/database.types";
-import { formatDuration, formatHourLabel, minutesSinceMidnight, splitIntervalByDay } from "@/lib/time";
+import {
+  formatDuration,
+  formatHourLabel,
+  minutesSinceMidnight,
+  sleepMinutesExcludingWakings,
+  splitIntervalByDay,
+} from "@/lib/time";
 import { feedTypeIcon } from "@/lib/feedingTypes";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -212,20 +218,11 @@ export function DayTimeline({
               <button
                 key={`${session.id}-${i}`}
                 onClick={() => onSelectSession(session)}
-                className={`absolute inset-x-2 rounded-lg px-2 py-1 text-left text-white shadow-sm transition hover:brightness-110 ${
+                className={`absolute inset-x-2 rounded-lg shadow-sm transition hover:brightness-110 ${
                   session.is_night_sleep ? "bg-slate-700" : "bg-slate-400"
                 } ${ongoing ? "ring-2 ring-amber-300" : ""}`}
                 style={{ top, height }}
-              >
-                <span className="text-xs font-medium">
-                  {session.is_night_sleep ? `🌆 ${t.timelineView.nightSleep}` : `🌙 ${t.timelineView.nap}`}
-                </span>
-                {height > 38 && (
-                  <div className="text-[10px] opacity-90">
-                    {formatDuration(endMinutes - startMinutes)}
-                  </div>
-                )}
-              </button>
+              />
             );
           })}
 
@@ -258,6 +255,28 @@ export function DayTimeline({
               {feeding.amount ? ` ${feeding.amount}${feeding.unit}` : ""}
             </button>
           ))}
+
+          {/* Drawn last so neither a waking nor a feeding pill can cover the duration, and
+              showing the whole sleep — a night split at midnight reads the same on both days. */}
+          {segments.map(({ session, startMinutes, endMinutes }, i) => {
+            const height = Math.max(topForMinutes(endMinutes - startMinutes), 22);
+            return (
+              <div
+                key={`${session.id}-label-${i}`}
+                className="pointer-events-none absolute left-3 z-20 rounded bg-slate-900/85 px-1.5 py-0.5 leading-tight text-white"
+                style={{ top: topForMinutes(startMinutes) + 4 }}
+              >
+                <span className="text-xs font-medium">
+                  {session.is_night_sleep ? `🌆 ${t.timelineView.nightSleep}` : `🌙 ${t.timelineView.nap}`}
+                </span>
+                {height > 38 && (
+                  <div className="text-[10px] opacity-90">
+                    {formatDuration(sleepMinutesExcludingWakings(session, nightWakings))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           {drag && drag.moved && allowDragCreate && (
             <div
