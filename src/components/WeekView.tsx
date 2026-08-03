@@ -4,7 +4,13 @@ import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { addDays, addMinutes, eachDayOfInterval, format, isToday, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
-import { formatDuration, formatHourLabel, minutesSinceMidnight, splitIntervalByDay } from "@/lib/time";
+import {
+  formatDuration,
+  formatHourLabel,
+  minutesSinceMidnight,
+  sleepMinutesExcludingWakings,
+  splitIntervalByDay,
+} from "@/lib/time";
 import { feedTypeIcon } from "@/lib/feedingTypes";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -221,24 +227,17 @@ export function WeekView({
 
               {segments.map(({ session, startMinutes, endMinutes }, i) => {
                 const ongoing = !session.ended_at;
-                const top = pct(startMinutes);
-                const duration = endMinutes - startMinutes;
-                const height = Math.max(pct(duration), 6);
+                const height = Math.max(pct(endMinutes - startMinutes), 6);
                 return (
                   <button
                     key={`${session.id}-${i}`}
                     onClick={() => onSelectSession(session)}
-                    title={`${session.is_night_sleep ? t.timelineView.nightSleep : t.timelineView.nap} · ${formatDuration(duration)}`}
-                    className={`absolute inset-x-0.5 overflow-hidden rounded-lg px-1 text-left text-[10px] leading-tight whitespace-nowrap text-white ${
-                      session.is_night_sleep
-                        ? "bg-slate-700"
-                        : "bg-slate-400"
+                    title={`${session.is_night_sleep ? t.timelineView.nightSleep : t.timelineView.nap} · ${formatDuration(sleepMinutesExcludingWakings(session, nightWakings))}`}
+                    className={`absolute inset-x-0.5 overflow-hidden rounded-lg ${
+                      session.is_night_sleep ? "bg-slate-700" : "bg-slate-400"
                     } ${ongoing ? "ring-2 ring-amber-300" : ""}`}
-                    style={{ top, height }}
-                  >
-                    {height > 16 &&
-                      `${session.is_night_sleep ? "🌆" : "🌙"} ${formatDuration(duration)}`}
-                  </button>
+                    style={{ top: pct(startMinutes), height }}
+                  />
                 );
               })}
 
@@ -267,6 +266,21 @@ export function WeekView({
                   {feedTypeIcon(feeding.feed_type)}
                 </button>
               ))}
+
+              {/* Drawn last so neither a waking nor a feeding badge can cover the duration.
+                  Shows the whole sleep, so a night split at midnight reads the same on both days. */}
+              {segments.map(({ session, startMinutes, endMinutes }, i) =>
+                pct(endMinutes - startMinutes) > 16 ? (
+                  <span
+                    key={`${session.id}-label-${i}`}
+                    className="pointer-events-none absolute left-1 z-20 rounded bg-slate-900/85 px-1 text-[10px] leading-tight whitespace-nowrap text-white"
+                    style={{ top: pct(startMinutes) + 2 }}
+                  >
+                    {session.is_night_sleep ? "🌆" : "🌙"}{" "}
+                    {formatDuration(sleepMinutesExcludingWakings(session, nightWakings))}
+                  </span>
+                ) : null,
+              )}
 
               {tapPrompt && tapPrompt.day === key && (
                 <>

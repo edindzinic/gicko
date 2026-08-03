@@ -94,17 +94,17 @@ export default function CalendarPage() {
     const end = gridEnd.toISOString();
 
     const [{ data: s }, { data: f }, { data: wakings }] = await Promise.all([
+      // Both reach back a day: an evening event counts toward the next morning's day.
       supabase
         .from("sleep_sessions")
         .select("*")
-        .gte("started_at", start)
+        .gte("started_at", addDays(gridStart, -1).toISOString())
         .lte("started_at", end),
       supabase
         .from("feedings")
         .select("*")
         .gte("occurred_at", start)
         .lte("occurred_at", end),
-      // Reaches back a day: an evening waking counts toward the next morning's day.
       supabase
         .from("night_wakings")
         .select("*")
@@ -128,7 +128,11 @@ export default function CalendarPage() {
   const statsByDay = useMemo(() => {
     const map = new Map<string, DayStats>();
     for (const s of sessions) {
-      const key = format(new Date(s.started_at), "yyyy-MM-dd");
+      // A night belongs to the morning it ends on, matching how Home and the dashboard
+      // attribute it — so an evening bedtime counts toward the next day, whole.
+      const key = s.is_night_sleep
+        ? nightAttributionDay(s.started_at)
+        : format(new Date(s.started_at), "yyyy-MM-dd");
       const stat =
         map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, solidCount: 0, nightWakeUps: 0 };
       stat.sleepMinutes += sleepMinutesExcludingWakings(s, nightWakings);
