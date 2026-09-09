@@ -5,7 +5,12 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables, TablesInsert } from "@/lib/database.types";
 import { combineDateAndTime, toDateInputValue, toTimeInputValue } from "@/lib/time";
-import { FEED_TYPE_ICONS, type FeedType } from "@/lib/feedingTypes";
+import {
+  DEFAULT_FEED_TYPE,
+  FEED_TYPE_ICONS,
+  LOGGABLE_FEED_TYPES,
+  type FeedType,
+} from "@/lib/feedingTypes";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function FeedingModal({
@@ -25,12 +30,6 @@ export function FeedingModal({
   onSaved: () => void;
 }) {
   const { t } = useLanguage();
-  const FEED_TYPES: { value: FeedType; label: string; icon: string }[] = [
-    { value: "bottle", label: t.feedTypes.bottle, icon: FEED_TYPE_ICONS.bottle },
-    { value: "breast", label: t.feedTypes.breast, icon: FEED_TYPE_ICONS.breast },
-    { value: "formula", label: t.feedTypes.formula, icon: FEED_TYPE_ICONS.formula },
-    { value: "solid", label: t.feedTypes.solid, icon: FEED_TYPE_ICONS.solid },
-  ];
   const isEditing = !!feeding;
   const now = new Date();
   const initialDateTime =
@@ -47,7 +46,7 @@ export function FeedingModal({
       : now);
 
   const [feedType, setFeedType] = useState<FeedType>(
-    (feeding?.feed_type as FeedType) ?? "bottle",
+    (feeding?.feed_type as FeedType) ?? DEFAULT_FEED_TYPE,
   );
   const [amount, setAmount] = useState(feeding?.amount != null ? String(feeding.amount) : "");
   const [unit, setUnit] = useState<"ml" | "oz">((feeding?.unit as "ml" | "oz") ?? "ml");
@@ -62,6 +61,12 @@ export function FeedingModal({
   const [error, setError] = useState<string | null>(null);
 
   const needsAmount = feedType === "bottle" || feedType === "formula";
+
+  // Only the current types are offered. A retired one stays selectable while editing an
+  // older entry, so saving that entry can't quietly turn it into something it wasn't.
+  const feedTypes = (
+    LOGGABLE_FEED_TYPES.includes(feedType) ? LOGGABLE_FEED_TYPES : [...LOGGABLE_FEED_TYPES, feedType]
+  ).map((value) => ({ value, label: t.feedTypes[value], icon: FEED_TYPE_ICONS[value] }));
 
   useEffect(() => {
     const supabase = createClient();
@@ -131,8 +136,10 @@ export function FeedingModal({
           {isEditing ? t.feedingModal.editTitle : t.feedingModal.logTitle}
         </h2>
 
-        <div className="mb-4 grid grid-cols-4 gap-2">
-          {FEED_TYPES.map((feedTypeOption) => (
+        <div
+          className={`mb-4 grid gap-2 ${feedTypes.length > 2 ? "grid-cols-3" : "grid-cols-2"}`}
+        >
+          {feedTypes.map((feedTypeOption) => (
             <button
               key={feedTypeOption.value}
               onClick={() => setFeedType(feedTypeOption.value)}
