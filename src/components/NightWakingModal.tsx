@@ -10,13 +10,16 @@ export function NightWakingModal({
   waking,
   defaultStart,
   defaultEnd,
+  sleepSessionId,
   onClose,
   onSaved,
 }: {
   waking?: Tables<"night_wakings">;
   /** Prefilled start when logging a new waking (e.g. from tapping the timeline). */
   defaultStart?: Date;
-  defaultEnd?: Date;
+  defaultEnd?: Date | null;
+  /** Night sleep the new waking happened during, when it's known. */
+  sleepSessionId?: string | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -43,6 +46,7 @@ export function NightWakingModal({
       started_at: combineDateAndTime(startedDate, startedTime).toISOString(),
       ended_at:
         endedDate && endedTime ? combineDateAndTime(endedDate, endedTime).toISOString() : null,
+      ...(isEditing ? {} : { sleep_session_id: sleepSessionId ?? null }),
     };
 
     const { error: saveError } = isEditing

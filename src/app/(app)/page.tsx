@@ -38,9 +38,12 @@ export default function HomePage() {
   );
   const [wakePrompt, setWakePrompt] = useState<string | null>(null);
   const [nightWakings, setNightWakings] = useState<NightWaking[]>([]);
-  const [activeWaking, setActiveWaking] = useState<NightWaking | null>(null);
   const [editingWaking, setEditingWaking] = useState<NightWaking | null>(null);
-  const [creatingWaking, setCreatingWaking] = useState<{ at: Date } | null>(null);
+  const [creatingWaking, setCreatingWaking] = useState<{
+    start: Date;
+    end: Date | null;
+    sleepSessionId: string | null;
+  } | null>(null);
   const [editingSession, setEditingSession] = useState<SleepSession | null>(null);
   const [editingFeeding, setEditingFeeding] = useState<Feeding | null>(null);
   const [creatingSleep, setCreatingSleep] = useState<{ start: Date; end: Date | null } | null>(
@@ -105,7 +108,6 @@ export default function HomePage() {
       { data: feedings },
       { data: nights },
       { data: wakings },
-      { data: openWaking },
     ] = await Promise.all([
         supabase
           .from("sleep_sessions")
@@ -134,13 +136,6 @@ export default function HomePage() {
           .gte("started_at", wakingsFrom)
           .lte("started_at", dayEnd)
           .order("started_at", { ascending: false }),
-        supabase
-          .from("night_wakings")
-          .select("*")
-          .is("ended_at", null)
-          .order("started_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
       ]);
 
     setOpenSession(open ?? null);
@@ -148,7 +143,6 @@ export default function HomePage() {
     setDayFeedings(feedings ?? []);
     setNightSessions(nights ?? []);
     setNightWakings(wakings ?? []);
-    setActiveWaking(openWaking ?? null);
     setLoading(false);
   }, [selectedDate]);
 
@@ -175,38 +169,14 @@ export default function HomePage() {
     load();
   }
 
-  /** Logs the start of a night waking. The night sleep session stays open. */
-  async function startNightWaking() {
-    if (!openSession) return;
-    const supabase = createClient();
-    await supabase.from("night_wakings").insert({
-      started_at: new Date().toISOString(),
-      sleep_session_id: openSession.id,
-    });
-    load();
-  }
-
-  async function endNightWaking() {
-    if (!activeWaking) return;
-    const supabase = createClient();
-    await supabase
-      .from("night_wakings")
-      .update({ ended_at: new Date().toISOString() })
-      .eq("id", activeWaking.id);
-
-    setWakePrompt(activeWaking.sleep_session_id ?? openSession?.id ?? null);
-    load();
-  }
-
-  /** Ends the night for good. Closes any waking still open so nothing is left dangling. */
+  /** Ends the night for good. */
   async function morningWakeUp() {
     if (!openSession) return;
     const supabase = createClient();
-    const endedAt = new Date().toISOString();
-    if (activeWaking) {
-      await supabase.from("night_wakings").update({ ended_at: endedAt }).eq("id", activeWaking.id);
-    }
-    await supabase.from("sleep_sessions").update({ ended_at: endedAt }).eq("id", openSession.id);
+    await supabase
+      .from("sleep_sessions")
+      .update({ ended_at: new Date().toISOString() })
+      .eq("id", openSession.id);
     load();
   }
 
@@ -369,23 +339,9 @@ export default function HomePage() {
                 {formatTime(statusTime)}
                 <PencilLine className="h-4 w-4 opacity-70" strokeWidth={1.75} />
               </button>
-              <p className={`text-sm font-medium opacity-90 ${activeWaking ? "mb-2" : "mb-4"}`}>
+              <p className="mb-4 text-sm font-medium opacity-90">
                 {formatDuration(elapsedMinutes)} {openSession ? t.home.asleep : t.home.awake}
               </p>
-              {activeWaking && (
-                <button
-                  onClick={() => setEditingWaking(activeWaking)}
-                  className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium"
-                >
-                  {t.home.awakeNowSince(
-                    formatTime(activeWaking.started_at),
-                    formatDuration(
-                      Math.max(0, differenceInMinutes(now, parseISO(activeWaking.started_at))),
-                    ),
-                  )}
-                  <PencilLine className="h-3 w-3 opacity-70" strokeWidth={1.75} />
-                </button>
-              )}
             </>
           ) : (
             <>
@@ -396,29 +352,26 @@ export default function HomePage() {
 
           {openSession ? (
             openSession.is_night_sleep ? (
-              activeWaking ? (
+              <>
                 <button
-                  onClick={endNightWaking}
+                  onClick={() =>
+                    setCreatingWaking({
+                      start: new Date(),
+                      end: new Date(),
+                      sleepSessionId: openSession.id,
+                    })
+                  }
                   className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
                 >
-                  {t.home.backToSleep}
+                  {t.home.nightAwakening}
                 </button>
-              ) : (
-                <>
-                  <button
-                    onClick={startNightWaking}
-                    className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
-                  >
-                    {t.home.nightAwakening}
-                  </button>
-                  <button
-                    onClick={morningWakeUp}
-                    className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
-                  >
-                    {t.home.morningWake}
-                  </button>
-                </>
-              )
+                <button
+                  onClick={morningWakeUp}
+                  className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
+                >
+                  {t.home.morningWake}
+                </button>
+              </>
             ) : (
               <button
                 onClick={endSleep}
@@ -513,7 +466,7 @@ export default function HomePage() {
         predictionBand={predictionBand}
         nightWakings={nightWakings}
         onSelectWaking={setEditingWaking}
-        onCreateWaking={(at) => setCreatingWaking({ at })}
+        onCreateWaking={(at) => setCreatingWaking({ start: at, end: null, sleepSessionId: null })}
       />
 
       {feedingModalSleepId !== undefined && (
@@ -586,9 +539,14 @@ export default function HomePage() {
 
       {creatingWaking && (
         <NightWakingModal
-          defaultStart={creatingWaking.at}
+          defaultStart={creatingWaking.start}
+          defaultEnd={creatingWaking.end}
+          sleepSessionId={creatingWaking.sleepSessionId}
           onClose={() => setCreatingWaking(null)}
           onSaved={() => {
+            // Logging a waking from the night card is the moment the old "back to sleep"
+            // button used to ask about a feeding, so the prompt still follows it.
+            setWakePrompt(creatingWaking.sleepSessionId);
             setCreatingWaking(null);
             load();
           }}
