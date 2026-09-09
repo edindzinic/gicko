@@ -323,6 +323,9 @@ export default function SettingsPage() {
         <LanguageToggle />
       </div>
 
+      <NotificationSettings />
+
+      {/* Everything below plans the day itself, and is the admins' to set. */}
       <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
           <Apple className="h-4 w-4" strokeWidth={2} /> {t.settings.solidFoods}
@@ -379,8 +382,6 @@ export default function SettingsPage() {
 
         <p className="mt-4 text-xs text-neutral-400">{t.settings.solidFoodsHint}</p>
       </div>
-
-      <NotificationSettings />
 
       <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
