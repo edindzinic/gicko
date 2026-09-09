@@ -26,6 +26,10 @@ export default function SettingsPage() {
   const router = useRouter();
   const { t } = useLanguage();
   const [displayName, setDisplayName] = useState<string | null>(null);
+  // Admins set how the day is meant to go; everyone else can read it but not change it.
+  // The database enforces the same split, so hiding these controls is a courtesy, not the
+  // boundary itself.
+  const [isAdmin, setIsAdmin] = useState(false);
   const [from, setFrom] = useState(toInputValue(startOfMonth(new Date())));
   const [to, setTo] = useState(toInputValue(new Date()));
   const [exporting, setExporting] = useState(false);
@@ -53,10 +57,11 @@ export default function SettingsPage() {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("display_name")
+      .select("display_name, is_admin")
       .eq("id", user.id)
       .single();
     setDisplayName(profile?.display_name ?? null);
+    setIsAdmin(profile?.is_admin ?? false);
   }, []);
 
   const loadSolidFoods = useCallback(async () => {
@@ -331,38 +336,46 @@ export default function SettingsPage() {
                 className="flex items-center justify-between rounded-xl border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800"
               >
                 <span className="text-neutral-700 dark:text-neutral-300">{food.name}</span>
-                <button
-                  onClick={() => deleteSolidFood(food.id)}
-                  aria-label={t.settings.removeFoodAria(food.name)}
-                  className="text-neutral-400 hover:text-red-600"
-                >
-                  <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => deleteSolidFood(food.id)}
+                    aria-label={t.settings.removeFoodAria(food.name)}
+                    className="text-neutral-400 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+                  </button>
+                )}
               </li>
             ))}
           </ul>
         )}
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newFoodName}
-            onChange={(e) => setNewFoodName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") addSolidFood();
-            }}
-            placeholder={t.settings.foodPlaceholder}
-            className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
-          />
-          <button
-            onClick={addSolidFood}
-            disabled={addingFood || !newFoodName.trim()}
-            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
-          >
-            {t.settings.add}
-          </button>
-        </div>
-        {foodError && <p className="mt-2 text-sm text-red-600">{foodError}</p>}
+        {isAdmin ? (
+          <>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newFoodName}
+                onChange={(e) => setNewFoodName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") addSolidFood();
+                }}
+                placeholder={t.settings.foodPlaceholder}
+                className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
+              />
+              <button
+                onClick={addSolidFood}
+                disabled={addingFood || !newFoodName.trim()}
+                className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
+              >
+                {t.settings.add}
+              </button>
+            </div>
+            {foodError && <p className="mt-2 text-sm text-red-600">{foodError}</p>}
+          </>
+        ) : (
+          <p className="text-xs text-neutral-400">{t.settings.adminOnly}</p>
+        )}
 
         <p className="mt-4 text-xs text-neutral-400">{t.settings.solidFoodsHint}</p>
       </div>
@@ -387,38 +400,44 @@ export default function SettingsPage() {
                   </span>
                   {w.hours}h
                 </span>
-                <button
-                  onClick={() => deleteWakeWindow(w.id)}
-                  aria-label={t.settings.removeWakeWindowAria(i + 1)}
-                  className="text-neutral-400 hover:text-red-600"
-                >
-                  <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => deleteWakeWindow(w.id)}
+                    aria-label={t.settings.removeWakeWindowAria(i + 1)}
+                    className="text-neutral-400 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+                  </button>
+                )}
               </li>
             ))}
           </ul>
         )}
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            inputMode="decimal"
-            value={newWakeWindowHours}
-            onChange={(e) => setNewWakeWindowHours(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") addWakeWindow();
-            }}
-            placeholder={t.settings.wakeWindowPlaceholder}
-            className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
-          />
-          <button
-            onClick={addWakeWindow}
-            disabled={addingWakeWindow || !newWakeWindowHours.trim()}
-            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
-          >
-            {t.settings.add}
-          </button>
-        </div>
+        {isAdmin ? (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={newWakeWindowHours}
+              onChange={(e) => setNewWakeWindowHours(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addWakeWindow();
+              }}
+              placeholder={t.settings.wakeWindowPlaceholder}
+              className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
+            />
+            <button
+              onClick={addWakeWindow}
+              disabled={addingWakeWindow || !newWakeWindowHours.trim()}
+              className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
+            >
+              {t.settings.add}
+            </button>
+          </div>
+        ) : (
+          <p className="text-xs text-neutral-400">{t.settings.adminOnly}</p>
+        )}
 
         <p className="mt-4 text-xs text-neutral-400">{t.settings.wakeWindowsHint}</p>
       </div>
@@ -441,38 +460,44 @@ export default function SettingsPage() {
                   </span>
                   {n.hours}h
                 </span>
-                <button
-                  onClick={() => deleteNapDuration(n.id)}
-                  aria-label={t.settings.removeNapDurationAria(i + 1)}
-                  className="text-neutral-400 hover:text-red-600"
-                >
-                  <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => deleteNapDuration(n.id)}
+                    aria-label={t.settings.removeNapDurationAria(i + 1)}
+                    className="text-neutral-400 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+                  </button>
+                )}
               </li>
             ))}
           </ul>
         )}
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            inputMode="decimal"
-            value={newNapDurationHours}
-            onChange={(e) => setNewNapDurationHours(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") addNapDuration();
-            }}
-            placeholder={t.settings.napDurationPlaceholder}
-            className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
-          />
-          <button
-            onClick={addNapDuration}
-            disabled={addingNapDuration || !newNapDurationHours.trim()}
-            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
-          >
-            {t.settings.add}
-          </button>
-        </div>
+        {isAdmin ? (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={newNapDurationHours}
+              onChange={(e) => setNewNapDurationHours(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addNapDuration();
+              }}
+              placeholder={t.settings.napDurationPlaceholder}
+              className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
+            />
+            <button
+              onClick={addNapDuration}
+              disabled={addingNapDuration || !newNapDurationHours.trim()}
+              className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
+            >
+              {t.settings.add}
+            </button>
+          </div>
+        ) : (
+          <p className="text-xs text-neutral-400">{t.settings.adminOnly}</p>
+        )}
 
         <p className="mt-4 text-xs text-neutral-400">{t.settings.napDurationsHint}</p>
       </div>
@@ -482,75 +507,87 @@ export default function SettingsPage() {
           <Milk className="h-4 w-4" strokeWidth={2} /> {t.settings.feedingInterval}
         </h2>
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            inputMode="decimal"
-            value={feedingIntervalHours}
-            onChange={(e) => {
-              setFeedingIntervalHours(e.target.value);
-              setFeedingIntervalSaved(false);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") saveFeedingInterval();
-            }}
-            placeholder={t.settings.feedingIntervalPlaceholder}
-            className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
-          />
-          <button
-            onClick={saveFeedingInterval}
-            disabled={savingFeedingInterval || !feedingIntervalHours.trim()}
-            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
-          >
-            {feedingIntervalSaved ? t.settings.saved : t.settings.save}
-          </button>
-        </div>
+        {isAdmin ? (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={feedingIntervalHours}
+              onChange={(e) => {
+                setFeedingIntervalHours(e.target.value);
+                setFeedingIntervalSaved(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveFeedingInterval();
+              }}
+              placeholder={t.settings.feedingIntervalPlaceholder}
+              className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
+            />
+            <button
+              onClick={saveFeedingInterval}
+              disabled={savingFeedingInterval || !feedingIntervalHours.trim()}
+              className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
+            >
+              {feedingIntervalSaved ? t.settings.saved : t.settings.save}
+            </button>
+          </div>
+        ) : (
+          <>
+            <p className="rounded-xl border border-neutral-200 px-3 py-2.5 text-sm text-neutral-700 dark:border-neutral-800 dark:text-neutral-300">
+              {feedingIntervalHours ? `${feedingIntervalHours}h` : "—"}
+            </p>
+            <p className="mt-2 text-xs text-neutral-400">{t.settings.adminOnly}</p>
+          </>
+        )}
 
         <p className="mt-4 text-xs text-neutral-400">{t.settings.feedingIntervalHint}</p>
       </div>
 
-      <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
-          <Download className="h-4 w-4" strokeWidth={2} /> {t.settings.exportData}
-        </h2>
+      {/* The whole day's log downloads here, so it's the admins' to hand out. */}
+      {isAdmin && (
+        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
+            <Download className="h-4 w-4" strokeWidth={2} /> {t.settings.exportData}
+          </h2>
 
-        <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          {t.settings.from}
-        </label>
-        <div className="mb-4 w-full overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="w-full min-w-0 px-3 py-2.5 text-base dark:bg-neutral-900"
-          />
+          <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            {t.settings.from}
+          </label>
+          <div className="mb-4 w-full overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
+            <input
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              className="w-full min-w-0 px-3 py-2.5 text-base dark:bg-neutral-900"
+            />
+          </div>
+
+          <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            {t.settings.to}
+          </label>
+          <div className="mb-6 w-full overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
+            <input
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="w-full min-w-0 px-3 py-2.5 text-base dark:bg-neutral-900"
+            />
+          </div>
+
+          {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-base font-medium text-white hover:brightness-110 disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" strokeWidth={2} />
+            {exporting ? t.settings.preparing : t.settings.exportToExcel}
+          </button>
+
+          <p className="mt-4 text-center text-xs text-neutral-400">{t.settings.exportHint}</p>
         </div>
-
-        <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          {t.settings.to}
-        </label>
-        <div className="mb-6 w-full overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="w-full min-w-0 px-3 py-2.5 text-base dark:bg-neutral-900"
-          />
-        </div>
-
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-
-        <button
-          onClick={handleExport}
-          disabled={exporting}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-base font-medium text-white hover:brightness-110 disabled:opacity-50"
-        >
-          <Download className="h-4 w-4" strokeWidth={2} />
-          {exporting ? t.settings.preparing : t.settings.exportToExcel}
-        </button>
-
-        <p className="mt-4 text-center text-xs text-neutral-400">{t.settings.exportHint}</p>
-      </div>
+      )}
     </div>
   );
 }

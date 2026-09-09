@@ -65,3 +65,18 @@ nothing to set by hand, and no key in any env file.
 
 Its `Authorization` header carries the project's public anon key, which only satisfies the
 function's JWT check. If that key is ever rotated, reschedule the job with the new one.
+
+## Who can change what
+
+`profiles.is_admin` marks the two people who set how the day is meant to go — Edin and
+Amina. Everyone signed in can read the solid foods, wake windows, nap lengths and feeding
+interval; only an admin can write them, enforced by RLS rather than by hiding buttons.
+`public.is_admin()` is the helper those policies call.
+
+Anyone may update their own profile row, which is how the language toggle works, so a
+trigger stops the flag being self-assigned: only an existing admin can change it, or the
+SQL side, where there is no `auth.uid()`. Both functions have `EXECUTE` revoked from
+`PUBLIC` so neither is reachable over the REST API.
+
+The export button is admin-only in the UI, but that one is a courtesy rather than a wall:
+it reads sleep and feeding rows that everyone signed in can read anyway.

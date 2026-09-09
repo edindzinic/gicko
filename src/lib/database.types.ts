@@ -207,6 +207,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          is_admin: boolean
           is_mom: boolean
           language: string
           username: string
@@ -215,6 +216,7 @@ export type Database = {
           created_at?: string
           display_name: string
           id: string
+          is_admin?: boolean
           is_mom?: boolean
           language?: string
           username: string
@@ -223,6 +225,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          is_admin?: boolean
           is_mom?: boolean
           language?: string
           username?: string
@@ -367,6 +370,7 @@ export type Database = {
     }
     Functions: {
       email_for_username: { Args: { uname: string }; Returns: string }
+      is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
