@@ -18,7 +18,11 @@ import {
   nightAttributionDay,
   sessionDurationMinutes,
 } from "@/lib/time";
-import { adjustedWakeWindowHours, completedAwakeHours } from "@/lib/wakeBudget";
+import {
+  adjustedFromPlan,
+  completedAwakeHours,
+  completedNapHours,
+} from "@/lib/dayBudget";
 import { feedTypeIcon, type FeedType } from "@/lib/feedingTypes";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -207,13 +211,14 @@ export default function HomePage() {
   const statusSession = openSession ?? lastEndedSession ?? null;
   const statusTime = openSession ? openSession.started_at : (lastEndedSession?.ended_at ?? null);
 
-  // How long each finished awake stretch actually lasted, which is what the wake windows
-  // are measured against — they're a budget for the day, not three separate timers.
+  // Wake windows and nap lengths are budgets for the day rather than rows of independent
+  // timers, so both are measured against how the day has actually gone so far.
   const awakeSoFarHours = morningWake
     ? completedAwakeHours(morningWake.getTime(), daySessions)
     : [];
+  const napsSoFarHours = morningWake ? completedNapHours(morningWake.getTime(), daySessions) : [];
   const completedNapsSinceWake = awakeSoFarHours.length;
-  const wakeWindowHours = adjustedWakeWindowHours(
+  const wakeWindowHours = adjustedFromPlan(
     wakeWindows.map((w) => w.hours),
     awakeSoFarHours,
   );
@@ -223,12 +228,12 @@ export default function HomePage() {
       ? addHours(parseISO(statusTime), wakeWindowHours)
       : null;
 
-  // The nap he's on is the one after those already finished today, so it gets the nap
-  // length at that position — like wake windows, the last value repeats for later naps.
-  const napDurationHours =
-    napDurations.length > 0
-      ? napDurations[Math.min(completedNapsSinceWake, napDurations.length - 1)].hours
-      : null;
+  // The nap he's on gets what's left of the day's nap time: its planned length, plus or
+  // minus whatever the naps before it over- or undershot by.
+  const napDurationHours = adjustedFromPlan(
+    napDurations.map((n) => n.hours),
+    napsSoFarHours,
+  );
   const expectedWakeAt =
     openSession && !openSession.is_night_sleep && statusTime && napDurationHours != null
       ? addHours(parseISO(statusTime), napDurationHours)

@@ -182,7 +182,7 @@ const en = {
     napDurationPlaceholder: "e.g. 1.5",
     removeNapDurationAria: (n: number) => `Remove nap length ${n}`,
     napDurationsHint:
-      "How long each nap should last, in order. Used to predict when he wakes up. The last value repeats for any later naps.",
+      "How long each nap should last, in order. They add up to the day's total nap time: overshoot one and the naps left shorten, wake early and they lengthen. The last value repeats for any later naps.",
     exportData: "Export data",
     from: "From",
     to: "To",
@@ -381,7 +381,7 @@ const bs: Translations = {
     napDurationPlaceholder: "npr. 1.5",
     removeNapDurationAria: (n: number) => `Ukloni dužinu dremke ${n}`,
     napDurationsHint:
-      "Koliko dugo treba trajati svaka dremka, redoslijedom. Koristi se za predviđanje buđenja. Posljednja vrijednost se ponavlja za sve naredne dremke.",
+      "Koliko dugo treba trajati svaka dremka, redoslijedom. Zbir je ukupno vrijeme dremki u danu: ako jedna potraje duže, preostale se skrate, a ako se probudi ranije, produže se. Posljednja vrijednost se ponavlja za sve naredne dremke.",
     exportData: "Izvoz podataka",
     from: "Od",
     to: "Do",
@@ -578,7 +578,7 @@ const de: Translations = {
     napDurationPlaceholder: "z. B. 1.5",
     removeNapDurationAria: (n: number) => `Nickerchen-Dauer ${n} entfernen`,
     napDurationsHint:
-      "Wie lange jedes Nickerchen dauern soll, der Reihe nach. Dient zur Vorhersage des Aufwachens. Der letzte Wert wiederholt sich für alle weiteren Nickerchen.",
+      "Wie lange jedes Nickerchen dauern soll, der Reihe nach. Zusammen ergeben sie die gesamte Nickerchen-Zeit des Tages: dauert eines länger, werden die übrigen kürzer, wacht er früher auf, werden sie länger. Der letzte Wert wiederholt sich für alle weiteren Nickerchen.",
     exportData: "Daten exportieren",
     from: "Von",
     to: "Bis",

@@ -100,13 +100,38 @@ test("a nap in progress announces its own end and nothing else", () => {
 });
 
 test("the second nap uses the second nap length", () => {
+  // The first nap ran its planned 1.5h, so the second gets its plain 1.25h.
+  const sessions = [
+    LAST_NIGHT,
+    nap("n1", "2026-09-09T10:00:00Z", "2026-09-09T11:30:00Z"),
+    nap("open", "2026-09-09T11:40:00Z", null),
+  ];
+  assert.deepEqual(only(due(sessions), "nap_end"), [
+    { kind: "nap_end", target: "2026-09-09T12:50:00.000Z", key: "open" },
+  ]);
+});
+
+test("a nap that overshot shortens the next one's expected end", () => {
+  // First nap ran 2h instead of 1.5: the half hour comes off the second, leaving 0.75h.
+  const sessions = [
+    LAST_NIGHT,
+    nap("n1", "2026-09-09T10:00:00Z", "2026-09-09T12:00:00Z"),
+    nap("open", "2026-09-09T12:40:00Z", null),
+  ];
+  assert.deepEqual(only(due(sessions, [], new Date("2026-09-09T13:00:00Z")), "nap_end"), [
+    { kind: "nap_end", target: "2026-09-09T13:20:00.000Z", key: "open" },
+  ]);
+});
+
+test("waking early from a nap lengthens the next one's expected end", () => {
+  // First nap ran 1h instead of 1.5: the half hour goes to the second, making it 1.75h.
   const sessions = [
     LAST_NIGHT,
     nap("n1", "2026-09-09T10:00:00Z", "2026-09-09T11:00:00Z"),
     nap("open", "2026-09-09T11:40:00Z", null),
   ];
   assert.deepEqual(only(due(sessions), "nap_end"), [
-    { kind: "nap_end", target: "2026-09-09T12:50:00.000Z", key: "open" },
+    { kind: "nap_end", target: "2026-09-09T13:20:00.000Z", key: "open" },
   ]);
 });
 

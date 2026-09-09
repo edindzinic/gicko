@@ -8,7 +8,7 @@ Sends the sleep and feeding reminders as web push:
 | --- | --- | --- |
 | `nap_due` | 10 min before the next nap is due | last wake-up + the wake window for that nap, adjusted |
 | `bedtime_due` | 10 min before bedtime | same, once the wake windows run out |
-| `nap_end` | 5 min before a nap should end | nap start + the nap length for that nap |
+| `nap_end` | 5 min before a nap should end | nap start + the nap length for that nap, adjusted |
 | `feeding_due` | 1h30 after the last feeding | the newest feeding, once the day's first one is logged |
 
 Feeding reminders only go out while he's awake. One that comes due mid-nap waits for the
@@ -21,11 +21,13 @@ anything is due and stays silent otherwise. A row in `notification_deliveries` i
 before sending, and its unique `(kind, dedupe_key)` is what stops a repeated or
 overlapping tick from sending the same reminder twice.
 
-Wake windows are read as a budget for the day rather than three separate timers: 3 + 4 + 4
-means eleven hours awake. A stretch that runs short or long is shared out equally over the
-windows still to come, so the total holds — `wakeBudget.ts`, shared with the app so both
-predict the same times, with a floor and a ceiling so one odd day can't produce a
-fifteen-minute or a nine-hour window.
+Wake windows and nap lengths are read as budgets for the day rather than rows of separate
+timers: 3 + 4 + 4 means eleven hours awake, 1.5 + 1.25 means two and three quarter hours
+of naps. A stretch that runs short or long is shared out equally over the ones still to
+come, so each total holds — an overshot first nap shortens the second, and an early wake
+lengthens it. That's `dayBudget.ts`, shared with the app so both predict the same times,
+with a floor and a ceiling so one odd day can't produce a fifteen-minute or a nine-hour
+stretch.
 
 Reminders only exist while the settings they come from do: no wake windows means no
 `nap_due`/`bedtime_due`, and no nap lengths means no `nap_end`. The feeding interval is a
@@ -39,10 +41,10 @@ The source of truth is `functions/notify-sleep/`: `index.ts` for the runtime and
 are deployed with the Supabase MCP `deploy_edge_function` tool — edit them, then redeploy
 so the running function matches the repo.
 
-`schedule.ts` and `wakeBudget.ts` have no dependencies and are covered by
-`schedule.test.mts` and `src/lib/wakeBudget.test.mts`; run both with `npm test`.
-`wakeBudget.ts` is a copy of `src/lib/wakeBudget.ts` — edit the original, copy it over,
-and redeploy, or the app and the reminders will drift apart. These reminders fire when nobody is watching, so the timing rules are pinned
+`schedule.ts` and `dayBudget.ts` have no dependencies and are covered by
+`schedule.test.mts` and `src/lib/dayBudget.test.mts`; run both with `npm test`.
+`dayBudget.ts` is a copy of `src/lib/dayBudget.ts` — edit the original, copy it over, and
+redeploy, or the app and the reminders will drift apart. These reminders fire when nobody is watching, so the timing rules are pinned
 down there rather than checked by hand.
 
 ### Keys

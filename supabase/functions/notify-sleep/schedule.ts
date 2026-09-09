@@ -3,7 +3,7 @@
  * live in index.ts, and schedule.test.mts exercises this file directly with `npm test`.
  * The wake-window budget it leans on is shared with the app; see wakeBudget.ts.
  */
-import { adjustedWakeWindowHours, completedAwakeHours } from "./wakeBudget.ts";
+import { adjustedFromPlan, completedAwakeHours, completedNapHours } from "./dayBudget.ts";
 
 const SLEEP_LEAD_MINUTES = 10;
 const WAKE_LEAD_MINUTES = 5;
@@ -79,16 +79,17 @@ export function computeDue(
   const morningWake = lastNight
     ? Date.parse(lastNight.ended_at!)
     : now.getTime() - FALLBACK_MORNING_HOURS * 3600_000;
-  // Each finished awake stretch, which is what the wake windows are measured against:
-  // they budget the day's total awake time rather than running independently.
+  // Wake windows and nap lengths both budget a daily total rather than running
+  // independently, so each is measured against how the day has actually gone.
   const awakeSoFarHours = completedAwakeHours(morningWake, sessions);
+  const napsSoFarHours = completedNapHours(morningWake, sessions);
   const completedNaps = awakeSoFarHours.length;
 
   // Asleep: the nap's own end is the only thing worth announcing. Night sleep has none —
   // the morning is when it's over.
   if (open) {
-    if (!open.is_night_sleep && napDurationHours.length > 0) {
-      const hours = napDurationHours[Math.min(completedNaps, napDurationHours.length - 1)];
+    const hours = adjustedFromPlan(napDurationHours, napsSoFarHours);
+    if (!open.is_night_sleep && hours !== null) {
       due.push({
         kind: "nap_end",
         dedupeKey: open.id,
@@ -103,7 +104,7 @@ export function computeDue(
     return due;
   }
 
-  const hours = adjustedWakeWindowHours(wakeWindowHours, awakeSoFarHours);
+  const hours = adjustedFromPlan(wakeWindowHours, awakeSoFarHours);
   if (lastEnded && hours !== null) {
     const isBedtime = completedNaps >= wakeWindowHours.length - 1;
     due.push({
