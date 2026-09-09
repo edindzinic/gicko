@@ -92,6 +92,30 @@ export type Database = {
           },
         ]
       }
+      nap_durations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          hours: number
+          id: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          hours: number
+          id?: string
+          position: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          hours?: number
+          id?: string
+          position?: number
+        }
+        Relationships: []
+      }
       night_wakings: {
         Row: {
           created_at: string

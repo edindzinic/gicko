@@ -56,6 +56,7 @@ export default function HomePage() {
   const [now, setNow] = useState(() => new Date());
   const [solidFoods, setSolidFoods] = useState<Tables<"solid_foods">[]>([]);
   const [wakeWindows, setWakeWindows] = useState<Tables<"wake_windows">[]>([]);
+  const [napDurations, setNapDurations] = useState<Tables<"nap_durations">[]>([]);
   const [showFeedingsBreakdown, setShowFeedingsBreakdown] = useState(false);
   const [showWakeUpsBreakdown, setShowWakeUpsBreakdown] = useState(false);
   const [showNapsBreakdown, setShowNapsBreakdown] = useState(false);
@@ -85,6 +86,15 @@ export default function HomePage() {
       .select("*")
       .order("position", { ascending: true })
       .then(({ data }) => setWakeWindows(data ?? []));
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("nap_durations")
+      .select("*")
+      .order("position", { ascending: true })
+      .then(({ data }) => setNapDurations(data ?? []));
   }, []);
 
   useEffect(() => {
@@ -272,19 +282,45 @@ export default function HomePage() {
     !openSession && statusTime && wakeWindowHours != null
       ? addHours(parseISO(statusTime), wakeWindowHours)
       : null;
-  const wakeWindowBand =
-    viewingToday && nextNapAt && statusTime
+
+  // The nap he's on is the one after those already finished today, so it gets the nap
+  // length at that position — like wake windows, the last value repeats for later naps.
+  const napDurationHours =
+    napDurations.length > 0
+      ? napDurations[Math.min(completedNapsSinceWake, napDurations.length - 1)].hours
+      : null;
+  const expectedWakeAt =
+    openSession && !openSession.is_night_sleep && statusTime && napDurationHours != null
+      ? addHours(parseISO(statusTime), napDurationHours)
+      : null;
+
+  // The status card counts down to whichever comes next: the expected wake-up while he's
+  // napping, otherwise the end of the wake window he's in.
+  const predictedAt = expectedWakeAt ?? nextNapAt;
+  const predictedLabel = expectedWakeAt
+    ? t.home.expectedWakeUp
+    : isLastWakeWindow
+      ? t.home.nextBedtime
+      : t.home.nextNap;
+  const predictedTotalMinutes = expectedWakeAt
+    ? (napDurationHours ?? 0) * 60
+    : wakeWindowHours != null
+      ? wakeWindowHours * 60
+      : null;
+  const predictionBand =
+    viewingToday && predictedAt && statusTime
       ? {
           startMinutes: minutesSinceMidnight(statusTime),
-          endMinutes: minutesSinceMidnight(statusTime) + (wakeWindowHours ?? 0) * 60,
+          endMinutes: minutesSinceMidnight(statusTime) + (predictedTotalMinutes ?? 0),
         }
       : undefined;
-  const awakeMinutes = statusTime ? Math.max(0, differenceInMinutes(now, parseISO(statusTime))) : 0;
-  const wakeWindowTotalMinutes = wakeWindowHours != null ? wakeWindowHours * 60 : null;
-  const wakeProgressPct = wakeWindowTotalMinutes
-    ? Math.min(100, (awakeMinutes / wakeWindowTotalMinutes) * 100)
+  const elapsedMinutes = statusTime
+    ? Math.max(0, differenceInMinutes(now, parseISO(statusTime)))
     : 0;
-  const wakeOverdue = wakeWindowTotalMinutes != null && awakeMinutes > wakeWindowTotalMinutes;
+  const progressPct = predictedTotalMinutes
+    ? Math.min(100, (elapsedMinutes / predictedTotalMinutes) * 100)
+    : 0;
+  const overdue = predictedTotalMinutes != null && elapsedMinutes > predictedTotalMinutes;
 
   if (loading) {
     return <div className="p-6 text-center text-neutral-400">{t.common.loading}</div>;
@@ -321,11 +357,13 @@ export default function HomePage() {
               : "from-accent-soft to-accent shadow-amber-200/60 dark:shadow-black/40"
           }`}
         >
-          {statusSession && statusTime && nextNapAt ? (
+          {statusSession && statusTime && predictedAt ? (
             <>
               <div className="mb-3 flex items-start justify-between gap-4">
                 <div className="text-left">
-                  <p className="text-xs opacity-80">{t.home.awakeSince}</p>
+                  <p className="text-xs opacity-80">
+                    {openSession ? t.home.asleepSince : t.home.awakeSince}
+                  </p>
                   <button
                     onClick={() => setEditingSession(statusSession)}
                     className="flex items-center gap-1 text-4xl font-semibold tracking-tight"
@@ -335,24 +373,22 @@ export default function HomePage() {
                   </button>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs opacity-80">
-                    {isLastWakeWindow ? t.home.nextBedtime : t.home.nextNap}
-                  </p>
+                  <p className="text-xs opacity-80">{predictedLabel}</p>
                   <p className="text-4xl font-semibold tracking-tight">
-                    {format(nextNapAt, "HH:mm")}
+                    {format(predictedAt, "HH:mm")}
                   </p>
                 </div>
               </div>
               <div className="mb-1.5 h-2 w-full overflow-hidden rounded-full bg-white/25">
                 <div
-                  className={`h-full rounded-full transition-all ${wakeOverdue ? "bg-rose-500" : "bg-white"}`}
-                  style={{ width: `${wakeProgressPct}%` }}
+                  className={`h-full rounded-full transition-all ${overdue ? "bg-rose-500" : "bg-white"}`}
+                  style={{ width: `${progressPct}%` }}
                 />
               </div>
               <p
-                className={`mb-4 text-sm font-semibold ${wakeOverdue ? "text-rose-600" : "font-medium opacity-90"}`}
+                className={`mb-4 text-sm font-semibold ${overdue ? "text-rose-600" : "font-medium opacity-90"}`}
               >
-                {formatDuration(awakeMinutes)} {t.home.awake}
+                {formatDuration(elapsedMinutes)} {openSession ? t.home.asleep : t.home.awake}
               </p>
             </>
           ) : statusSession && statusTime ? (
@@ -366,7 +402,7 @@ export default function HomePage() {
                 <PencilLine className="h-4 w-4 opacity-70" strokeWidth={1.75} />
               </button>
               <p className={`text-sm font-medium opacity-90 ${activeWaking ? "mb-2" : "mb-4"}`}>
-                {formatDuration(awakeMinutes)} {openSession ? t.home.asleep : t.home.awake}
+                {formatDuration(elapsedMinutes)} {openSession ? t.home.asleep : t.home.awake}
               </p>
               {activeWaking && (
                 <button
@@ -535,7 +571,7 @@ export default function HomePage() {
         onCreateSleep={(start, end) => setCreatingSleep({ start, end })}
         onCreateFeeding={(at) => setCreatingFeeding({ at })}
         allowDragCreate={false}
-        wakeWindow={wakeWindowBand}
+        predictionBand={predictionBand}
         nightWakings={nightWakings}
         onSelectWaking={setEditingWaking}
         onCreateWaking={(at) => setCreatingWaking({ at })}

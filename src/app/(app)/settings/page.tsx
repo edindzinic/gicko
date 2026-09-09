@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, startOfMonth } from "date-fns";
-import { Apple, Download, Globe, Hourglass, LogOut, Palette, Trash2, User } from "lucide-react";
+import { Apple, Download, Globe, Hourglass, LogOut, Palette, Timer, Trash2, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -36,6 +36,9 @@ export default function SettingsPage() {
   const [wakeWindows, setWakeWindows] = useState<Tables<"wake_windows">[]>([]);
   const [newWakeWindowHours, setNewWakeWindowHours] = useState("");
   const [addingWakeWindow, setAddingWakeWindow] = useState(false);
+  const [napDurations, setNapDurations] = useState<Tables<"nap_durations">[]>([]);
+  const [newNapDurationHours, setNewNapDurationHours] = useState("");
+  const [addingNapDuration, setAddingNapDuration] = useState(false);
 
   const loadProfile = useCallback(async () => {
     const supabase = createClient();
@@ -70,12 +73,22 @@ export default function SettingsPage() {
     setWakeWindows(data ?? []);
   }, []);
 
+  const loadNapDurations = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("nap_durations")
+      .select("*")
+      .order("position", { ascending: true });
+    setNapDurations(data ?? []);
+  }, []);
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial profile + solid foods + wake windows fetch on mount
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial profile + solid foods + sleep settings fetch on mount
     loadProfile();
     loadSolidFoods();
     loadWakeWindows();
-  }, [loadProfile, loadSolidFoods, loadWakeWindows]);
+    loadNapDurations();
+  }, [loadProfile, loadSolidFoods, loadWakeWindows, loadNapDurations]);
 
   async function addSolidFood() {
     const name = newFoodName.trim();
@@ -121,6 +134,26 @@ export default function SettingsPage() {
     const supabase = createClient();
     await supabase.from("wake_windows").delete().eq("id", id);
     loadWakeWindows();
+  }
+
+  async function addNapDuration() {
+    const hours = Number(newNapDurationHours.replace(",", "."));
+    if (!hours || hours <= 0) return;
+
+    setAddingNapDuration(true);
+    const supabase = createClient();
+    const nextPosition =
+      napDurations.length > 0 ? Math.max(...napDurations.map((n) => n.position)) + 1 : 0;
+    await supabase.from("nap_durations").insert({ position: nextPosition, hours });
+    setAddingNapDuration(false);
+    setNewNapDurationHours("");
+    loadNapDurations();
+  }
+
+  async function deleteNapDuration(id: string) {
+    const supabase = createClient();
+    await supabase.from("nap_durations").delete().eq("id", id);
+    loadNapDurations();
   }
 
   async function signOut() {
@@ -359,6 +392,60 @@ export default function SettingsPage() {
         </div>
 
         <p className="mt-4 text-xs text-neutral-400">{t.settings.wakeWindowsHint}</p>
+      </div>
+
+      <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
+          <Timer className="h-4 w-4" strokeWidth={2} /> {t.settings.napDurations}
+        </h2>
+
+        {napDurations.length > 0 && (
+          <ul className="mb-4 space-y-2">
+            {napDurations.map((n, i) => (
+              <li
+                key={n.id}
+                className="flex items-center justify-between rounded-xl border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800"
+              >
+                <span className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-100 text-xs font-medium text-neutral-500 dark:bg-neutral-900 dark:text-neutral-400">
+                    {i + 1}
+                  </span>
+                  {n.hours}h
+                </span>
+                <button
+                  onClick={() => deleteNapDuration(n.id)}
+                  aria-label={t.settings.removeNapDurationAria(i + 1)}
+                  className="text-neutral-400 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={newNapDurationHours}
+            onChange={(e) => setNewNapDurationHours(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addNapDuration();
+            }}
+            placeholder={t.settings.napDurationPlaceholder}
+            className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
+          />
+          <button
+            onClick={addNapDuration}
+            disabled={addingNapDuration || !newNapDurationHours.trim()}
+            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
+          >
+            {t.settings.add}
+          </button>
+        </div>
+
+        <p className="mt-4 text-xs text-neutral-400">{t.settings.napDurationsHint}</p>
       </div>
 
       <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">

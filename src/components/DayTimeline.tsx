@@ -60,7 +60,7 @@ export function DayTimeline({
   onCreateFeeding,
   isToday = false,
   allowDragCreate = true,
-  wakeWindow,
+  predictionBand,
   nightWakings = [],
   onSelectWaking,
   onCreateWaking,
@@ -79,8 +79,11 @@ export function DayTimeline({
   isToday?: boolean;
   /** Set false to disable dragging to create a sleep session with a range (tap-to-choose still works). */
   allowDragCreate?: boolean;
-  /** Current wake window, shown as a subtle band from wake-up to the predicted next nap. */
-  wakeWindow?: { startMinutes: number; endMinutes: number };
+  /**
+   * The window in progress, shown as a subtle band: wake-up to the predicted next nap
+   * while he's awake, or nap start to the expected wake-up while he's napping.
+   */
+  predictionBand?: { startMinutes: number; endMinutes: number };
 }) {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -190,12 +193,12 @@ export function DayTimeline({
             />
           ))}
 
-          {wakeWindow && (
+          {predictionBand && (
             <div
               className="pointer-events-none absolute inset-x-0 border-y border-dashed border-accent/20 bg-accent/5"
               style={{
-                top: topForMinutes(wakeWindow.startMinutes),
-                height: topForMinutes(wakeWindow.endMinutes - wakeWindow.startMinutes),
+                top: topForMinutes(predictionBand.startMinutes),
+                height: topForMinutes(predictionBand.endMinutes - predictionBand.startMinutes),
               }}
             />
           )}

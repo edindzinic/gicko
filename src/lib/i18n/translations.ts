@@ -68,6 +68,7 @@ const en = {
     noPumpingToday: "No pumping logged today.",
     nextNap: "Next nap",
     nextBedtime: "Next bedtime",
+    expectedWakeUp: "Expected wake-up",
   },
   calendar: {
     month: "Month",
@@ -176,6 +177,11 @@ const en = {
     removeWakeWindowAria: (n: number) => `Remove wake window ${n}`,
     wakeWindowsHint:
       "How long he should stay awake before each nap, in order. The last value repeats for any later naps.",
+    napDurations: "Nap lengths",
+    napDurationPlaceholder: "e.g. 1.5",
+    removeNapDurationAria: (n: number) => `Remove nap length ${n}`,
+    napDurationsHint:
+      "How long each nap should last, in order. Used to predict when he wakes up. The last value repeats for any later naps.",
     exportData: "Export data",
     from: "From",
     to: "To",
@@ -260,6 +266,7 @@ const bs: Translations = {
     noPumpingToday: "Danas nema zabilježenih izdajanja.",
     nextNap: "Sljedeća dremka",
     nextBedtime: "Sljedeće spavanje",
+    expectedWakeUp: "Očekivano buđenje",
   },
   calendar: {
     month: "Mjesec",
@@ -368,6 +375,11 @@ const bs: Translations = {
     removeWakeWindowAria: (n: number) => `Ukloni prozor budnosti ${n}`,
     wakeWindowsHint:
       "Koliko dugo treba biti budan prije svake dremke, redoslijedom. Posljednja vrijednost se ponavlja za sve naredne dremke.",
+    napDurations: "Dužina dremki",
+    napDurationPlaceholder: "npr. 1.5",
+    removeNapDurationAria: (n: number) => `Ukloni dužinu dremke ${n}`,
+    napDurationsHint:
+      "Koliko dugo treba trajati svaka dremka, redoslijedom. Koristi se za predviđanje buđenja. Posljednja vrijednost se ponavlja za sve naredne dremke.",
     exportData: "Izvoz podataka",
     from: "Od",
     to: "Do",
@@ -450,6 +462,7 @@ const de: Translations = {
     noPumpingToday: "Heute kein Abpumpen erfasst.",
     nextNap: "Nächstes Nickerchen",
     nextBedtime: "Nächste Schlafenszeit",
+    expectedWakeUp: "Erwartetes Aufwachen",
   },
   calendar: {
     month: "Monat",
@@ -558,6 +571,11 @@ const de: Translations = {
     removeWakeWindowAria: (n: number) => `Wachfenster ${n} entfernen`,
     wakeWindowsHint:
       "Wie lange er vor jedem Nickerchen wach bleiben soll, der Reihe nach. Der letzte Wert wiederholt sich für alle weiteren Nickerchen.",
+    napDurations: "Nickerchen-Dauer",
+    napDurationPlaceholder: "z. B. 1.5",
+    removeNapDurationAria: (n: number) => `Nickerchen-Dauer ${n} entfernen`,
+    napDurationsHint:
+      "Wie lange jedes Nickerchen dauern soll, der Reihe nach. Dient zur Vorhersage des Aufwachens. Der letzte Wert wiederholt sich für alle weiteren Nickerchen.",
     exportData: "Daten exportieren",
     from: "Von",
     to: "Bis",
