@@ -265,209 +265,216 @@ export default function HomePage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6 sm:py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <button
-          onClick={() => setSelectedDate((d) => subDays(d, 1))}
-          aria-label={t.home.previousDay}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-        >
-          <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
-        </button>
-        <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-          {viewingToday ? t.home.today : format(selectedDate, "EEEE, MMM d")}
-        </h1>
-        <button
-          onClick={() => setSelectedDate((d) => addDays(d, 1))}
-          disabled={viewingToday}
-          aria-label={t.home.nextDay}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-neutral-900"
-        >
-          <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
-        </button>
-      </div>
+    <div className="mx-auto max-w-lg px-4 py-6 sm:py-10 lg:max-w-5xl">
+      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
+        <div>
+          <div className="mb-6 flex items-center justify-between">
+            <button
+              onClick={() => setSelectedDate((d) => subDays(d, 1))}
+              aria-label={t.home.previousDay}
+              className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+            >
+              <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+              {viewingToday ? t.home.today : format(selectedDate, "EEEE, MMM d")}
+            </h1>
+            <button
+              onClick={() => setSelectedDate((d) => addDays(d, 1))}
+              disabled={viewingToday}
+              aria-label={t.home.nextDay}
+              className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-neutral-900"
+            >
+              <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+          </div>
 
-      {viewingToday && (
-        <div
-          className={`mb-4 rounded-2xl bg-linear-to-br p-6 text-center text-white shadow-xl transition-colors ${
-            openSession
-              ? "from-neutral-700 to-neutral-950 shadow-neutral-300 dark:shadow-black/40"
-              : "from-accent-soft to-accent shadow-amber-200/60 dark:shadow-black/40"
-          }`}
-        >
-          {statusSession && statusTime && predictedAt ? (
-            <>
-              <div className="mb-3 flex items-start justify-between gap-4">
-                <div className="text-left">
-                  <p className="text-xs opacity-80">
-                    {openSession ? t.home.asleepSince : t.home.awakeSince}
+          {viewingToday && (
+            <div
+              className={`mb-4 rounded-2xl bg-linear-to-br p-6 text-center text-white shadow-xl transition-colors ${
+                openSession
+                  ? "from-neutral-700 to-neutral-950 shadow-neutral-300 dark:shadow-black/40"
+                  : "from-accent-soft to-accent shadow-amber-200/60 dark:shadow-black/40"
+              }`}
+            >
+              {statusSession && statusTime && predictedAt ? (
+                <>
+                  <div className="mb-3 flex items-start justify-between gap-4">
+                    <div className="text-left">
+                      <p className="text-xs opacity-80">
+                        {openSession ? t.home.asleepSince : t.home.awakeSince}
+                      </p>
+                      <button
+                        onClick={() => setEditingSession(statusSession)}
+                        className="flex items-center gap-1 text-4xl font-semibold tracking-tight"
+                      >
+                        {formatTime(statusTime)}
+                        <PencilLine className="h-4 w-4 opacity-70" strokeWidth={1.75} />
+                      </button>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs opacity-80">{predictedLabel}</p>
+                      <p className="text-4xl font-semibold tracking-tight">
+                        {format(predictedAt, "HH:mm")}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mb-1.5 h-2 w-full overflow-hidden rounded-full bg-white/25">
+                    <div
+                      className={`h-full rounded-full transition-all ${overdue ? "bg-rose-500" : "bg-white"}`}
+                      style={{ width: `${progressPct}%` }}
+                    />
+                  </div>
+                  <p
+                    className={`mb-4 text-sm font-semibold ${overdue ? "text-rose-600" : "font-medium opacity-90"}`}
+                  >
+                    {formatDuration(elapsedMinutes)} {openSession ? t.home.asleep : t.home.awake}
                   </p>
+                </>
+              ) : statusSession && statusTime ? (
+                <>
+                  <p className="text-sm opacity-80">{openSession ? t.home.asleepSince : t.home.awakeSince}</p>
                   <button
                     onClick={() => setEditingSession(statusSession)}
-                    className="flex items-center gap-1 text-4xl font-semibold tracking-tight"
+                    className="mb-1 flex w-full items-center justify-center gap-2 text-4xl font-semibold tracking-tight"
                   >
                     {formatTime(statusTime)}
                     <PencilLine className="h-4 w-4 opacity-70" strokeWidth={1.75} />
                   </button>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs opacity-80">{predictedLabel}</p>
-                  <p className="text-4xl font-semibold tracking-tight">
-                    {format(predictedAt, "HH:mm")}
+                  <p className="mb-4 text-sm font-medium opacity-90">
+                    {formatDuration(elapsedMinutes)} {openSession ? t.home.asleep : t.home.awake}
                   </p>
-                </div>
-              </div>
-              <div className="mb-1.5 h-2 w-full overflow-hidden rounded-full bg-white/25">
-                <div
-                  className={`h-full rounded-full transition-all ${overdue ? "bg-rose-500" : "bg-white"}`}
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-              <p
-                className={`mb-4 text-sm font-semibold ${overdue ? "text-rose-600" : "font-medium opacity-90"}`}
-              >
-                {formatDuration(elapsedMinutes)} {openSession ? t.home.asleep : t.home.awake}
-              </p>
-            </>
-          ) : statusSession && statusTime ? (
-            <>
-              <p className="text-sm opacity-80">{openSession ? t.home.asleepSince : t.home.awakeSince}</p>
-              <button
-                onClick={() => setEditingSession(statusSession)}
-                className="mb-1 flex w-full items-center justify-center gap-2 text-4xl font-semibold tracking-tight"
-              >
-                {formatTime(statusTime)}
-                <PencilLine className="h-4 w-4 opacity-70" strokeWidth={1.75} />
-              </button>
-              <p className="mb-4 text-sm font-medium opacity-90">
-                {formatDuration(elapsedMinutes)} {openSession ? t.home.asleep : t.home.awake}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-sm opacity-80">{openSession ? t.home.asleepSince : t.home.awakeSince}</p>
-              <p className="mb-4 text-4xl font-semibold">—</p>
-            </>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm opacity-80">{openSession ? t.home.asleepSince : t.home.awakeSince}</p>
+                  <p className="mb-4 text-4xl font-semibold">—</p>
+                </>
+              )}
+
+              {openSession ? (
+                openSession.is_night_sleep ? (
+                  <>
+                    <button
+                      onClick={() =>
+                        setCreatingWaking({
+                          start: new Date(),
+                          end: new Date(),
+                          sleepSessionId: openSession.id,
+                        })
+                      }
+                      className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
+                    >
+                      {t.home.nightAwakening}
+                    </button>
+                    <button
+                      onClick={morningWakeUp}
+                      className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
+                    >
+                      {t.home.morningWake}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={endSleep}
+                    className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
+                  >
+                    {t.home.wokeUp}
+                  </button>
+                )
+              ) : (
+                <button
+                  onClick={() => startSleep(isLastWakeWindow)}
+                  className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-amber-800 shadow-sm active:scale-[0.98]"
+                >
+                  {t.home.putDownToSleep}
+                </button>
+              )}
+            </div>
           )}
 
-          {openSession ? (
-            openSession.is_night_sleep ? (
-              <>
-                <button
-                  onClick={() =>
-                    setCreatingWaking({
-                      start: new Date(),
-                      end: new Date(),
-                      sleepSessionId: openSession.id,
-                    })
-                  }
-                  className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
-                >
-                  {t.home.nightAwakening}
-                </button>
-                <button
-                  onClick={morningWakeUp}
-                  className="mt-2 w-full rounded-xl border border-white/60 bg-white/10 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
-                >
-                  {t.home.morningWake}
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={endSleep}
-                className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-neutral-800 shadow-sm active:scale-[0.98]"
-              >
-                {t.home.wokeUp}
-              </button>
-            )
-          ) : (
+          {viewingToday && (
             <button
-              onClick={() => startSleep(isLastWakeWindow)}
-              className="w-full rounded-xl bg-white/95 py-3 text-base font-semibold text-amber-800 shadow-sm active:scale-[0.98]"
+              onClick={() => setFeedingModalSleepId(null)}
+              className="mb-3 w-full rounded-xl border-2 border-accent py-4 text-lg font-semibold text-accent active:scale-[0.98]"
             >
-              {t.home.putDownToSleep}
+              {t.home.logAFeeding}
             </button>
           )}
-        </div>
-      )}
 
-      {viewingToday && (
-        <button
-          onClick={() => setFeedingModalSleepId(null)}
-          className="mb-3 w-full rounded-xl border-2 border-accent py-4 text-lg font-semibold text-accent active:scale-[0.98]"
-        >
-          {t.home.logAFeeding}
-        </button>
-      )}
+          {/* Day rollup */}
+          <div className="mb-6 grid grid-cols-6 gap-3 text-center sm:grid-cols-5">
+            <div className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 sm:col-span-1">
+              <Moon className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
+              <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                {formatDuration(nightSleepMinutes)}
+              </p>
+              <p className="text-xs text-neutral-500">{t.home.statNightSleep}</p>
+            </div>
+            <div className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 sm:col-span-1">
+              <Sun className="mx-auto mb-1 h-4 w-4 text-accent" strokeWidth={1.75} />
+              <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                {formatDuration(dayAwakeMinutes)}
+              </p>
+              <p className="text-xs text-neutral-500">{t.home.statDaytimeAwake}</p>
+            </div>
+            <button
+              onClick={() => setShowNapsBreakdown(true)}
+              className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900 sm:col-span-1"
+            >
+              <Bed className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
+              <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                {formatDuration(napMinutes)}
+              </p>
+              <p className="text-xs text-neutral-500">{t.home.statNapsTotal}</p>
+            </button>
+            <button
+              onClick={() => setShowFeedingsBreakdown(true)}
+              className="col-span-3 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900 sm:col-span-1"
+            >
+              <Milk className="mx-auto mb-1 h-4 w-4 text-accent" strokeWidth={1.75} />
+              <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                {dayFeedings.length}
+              </p>
+              <p className="text-xs text-neutral-500">{t.home.statFeedings}</p>
+              {totalMlToday > 0 && (
+                <p className="text-[11px] text-neutral-400">{Math.round(totalMlToday)}ml</p>
+              )}
+            </button>
+            <button
+              onClick={() => setShowWakeUpsBreakdown(true)}
+              className="col-span-3 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900 sm:col-span-1"
+            >
+              <Timer className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
+              <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                {todayNightWakeUps.length}
+              </p>
+              <p className="text-xs text-neutral-500">{t.home.statNightWakeUps}</p>
+            </button>
+          </div>
+        </div>
 
-      {/* Day rollup */}
-      <div className="mb-6 grid grid-cols-6 gap-3 text-center sm:grid-cols-5">
-        <div className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 sm:col-span-1">
-          <Moon className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
-          <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-            {formatDuration(nightSleepMinutes)}
-          </p>
-          <p className="text-xs text-neutral-500">{t.home.statNightSleep}</p>
+        {/* Beside the controls on a wide screen, under them on a phone. */}
+        <div className="lg:sticky lg:top-10">
+          <h2 className="mb-2 text-sm font-semibold text-neutral-500">{t.home.timeline}</h2>
+          <DayTimeline
+            day={dayKey}
+            sessions={daySessions}
+            feedings={dayFeedings}
+            isToday={viewingToday}
+            onSelectSession={setEditingSession}
+            onSelectFeeding={setEditingFeeding}
+            onCreateSleep={(start, end) => setCreatingSleep({ start, end })}
+            onCreateFeeding={(at) => setCreatingFeeding({ at })}
+            allowDragCreate={false}
+            predictionBand={predictionBand}
+            nightWakings={nightWakings}
+            onSelectWaking={setEditingWaking}
+            onCreateWaking={(at) => setCreatingWaking({ start: at, end: null, sleepSessionId: null })}
+            tallOnDesktop
+          />
         </div>
-        <div className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 sm:col-span-1">
-          <Sun className="mx-auto mb-1 h-4 w-4 text-accent" strokeWidth={1.75} />
-          <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-            {formatDuration(dayAwakeMinutes)}
-          </p>
-          <p className="text-xs text-neutral-500">{t.home.statDaytimeAwake}</p>
-        </div>
-        <button
-          onClick={() => setShowNapsBreakdown(true)}
-          className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900 sm:col-span-1"
-        >
-          <Bed className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
-          <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-            {formatDuration(napMinutes)}
-          </p>
-          <p className="text-xs text-neutral-500">{t.home.statNapsTotal}</p>
-        </button>
-        <button
-          onClick={() => setShowFeedingsBreakdown(true)}
-          className="col-span-3 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900 sm:col-span-1"
-        >
-          <Milk className="mx-auto mb-1 h-4 w-4 text-accent" strokeWidth={1.75} />
-          <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-            {dayFeedings.length}
-          </p>
-          <p className="text-xs text-neutral-500">{t.home.statFeedings}</p>
-          {totalMlToday > 0 && (
-            <p className="text-[11px] text-neutral-400">{Math.round(totalMlToday)}ml</p>
-          )}
-        </button>
-        <button
-          onClick={() => setShowWakeUpsBreakdown(true)}
-          className="col-span-3 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900 sm:col-span-1"
-        >
-          <Timer className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
-          <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-            {todayNightWakeUps.length}
-          </p>
-          <p className="text-xs text-neutral-500">{t.home.statNightWakeUps}</p>
-        </button>
       </div>
-
-      {/* Timeline */}
-      <h2 className="mb-2 text-sm font-semibold text-neutral-500">{t.home.timeline}</h2>
-      <DayTimeline
-        day={dayKey}
-        sessions={daySessions}
-        feedings={dayFeedings}
-        isToday={viewingToday}
-        onSelectSession={setEditingSession}
-        onSelectFeeding={setEditingFeeding}
-        onCreateSleep={(start, end) => setCreatingSleep({ start, end })}
-        onCreateFeeding={(at) => setCreatingFeeding({ at })}
-        allowDragCreate={false}
-        predictionBand={predictionBand}
-        nightWakings={nightWakings}
-        onSelectWaking={setEditingWaking}
-        onCreateWaking={(at) => setCreatingWaking({ start: at, end: null, sleepSessionId: null })}
-      />
 
       {feedingModalSleepId !== undefined && (
         <FeedingModal

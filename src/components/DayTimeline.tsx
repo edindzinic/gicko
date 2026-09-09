@@ -64,6 +64,7 @@ export function DayTimeline({
   nightWakings = [],
   onSelectWaking,
   onCreateWaking,
+  tallOnDesktop = false,
 }: {
   day: string; // yyyy-MM-dd
   sessions: SleepSession[];
@@ -84,6 +85,11 @@ export function DayTimeline({
    * while he's awake, or nap start to the expected wake-up while he's napping.
    */
   predictionBand?: { startMinutes: number; endMinutes: number };
+  /**
+   * Set when the panel sits beside other content on a wide screen, where it can use the
+   * full window height instead of the phone-sized cap.
+   */
+  tallOnDesktop?: boolean;
 }) {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -160,7 +166,9 @@ export function DayTimeline({
   return (
     <div
       ref={containerRef}
-      className="relative isolate max-h-[420px] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-900"
+      className={`relative isolate overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-900 ${
+        tallOnDesktop ? "max-h-[420px] lg:max-h-[calc(100vh-8rem)]" : "max-h-[420px]"
+      }`}
     >
       <div className="flex">
         <div className="relative w-14 shrink-0 bg-neutral-50/50 dark:bg-neutral-950/50" style={{ height: DAY_HEIGHT }}>
