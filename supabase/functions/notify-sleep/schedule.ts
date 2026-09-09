@@ -1,7 +1,10 @@
 /**
  * When each reminder is due. Pure date arithmetic, no dependencies — the runtime bits
- * live in index.ts, and schedule.test.ts exercises this file directly with `npm test`.
+ * live in index.ts, and schedule.test.mts exercises this file directly with `npm test`.
+ * The wake-window budget it leans on is shared with the app; see wakeBudget.ts.
  */
+import { adjustedWakeWindowHours, completedAwakeHours } from "./wakeBudget.ts";
+
 const SLEEP_LEAD_MINUTES = 10;
 const WAKE_LEAD_MINUTES = 5;
 /** A feeding reminder stays useful for a while after the moment it names. */
@@ -76,9 +79,10 @@ export function computeDue(
   const morningWake = lastNight
     ? Date.parse(lastNight.ended_at!)
     : now.getTime() - FALLBACK_MORNING_HOURS * 3600_000;
-  const completedNaps = ended.filter(
-    (s) => !s.is_night_sleep && Date.parse(s.started_at) >= morningWake,
-  ).length;
+  // Each finished awake stretch, which is what the wake windows are measured against:
+  // they budget the day's total awake time rather than running independently.
+  const awakeSoFarHours = completedAwakeHours(morningWake, sessions);
+  const completedNaps = awakeSoFarHours.length;
 
   // Asleep: the nap's own end is the only thing worth announcing. Night sleep has none —
   // the morning is when it's over.
@@ -99,8 +103,8 @@ export function computeDue(
     return due;
   }
 
-  if (lastEnded && wakeWindowHours.length > 0) {
-    const hours = wakeWindowHours[Math.min(completedNaps, wakeWindowHours.length - 1)];
+  const hours = adjustedWakeWindowHours(wakeWindowHours, awakeSoFarHours);
+  if (lastEnded && hours !== null) {
     const isBedtime = completedNaps >= wakeWindowHours.length - 1;
     due.push({
       kind: isBedtime ? "bedtime_due" : "nap_due",

@@ -6,7 +6,7 @@ Sends the sleep and feeding reminders as web push:
 
 | kind | when | based on |
 | --- | --- | --- |
-| `nap_due` | 10 min before the next nap is due | last wake-up + the wake window for that nap |
+| `nap_due` | 10 min before the next nap is due | last wake-up + the wake window for that nap, adjusted |
 | `bedtime_due` | 10 min before bedtime | same, once the wake windows run out |
 | `nap_end` | 5 min before a nap should end | nap start + the nap length for that nap |
 | `feeding_due` | 1h30 after the last feeding | the newest feeding, once the day's first one is logged |
@@ -21,6 +21,12 @@ anything is due and stays silent otherwise. A row in `notification_deliveries` i
 before sending, and its unique `(kind, dedupe_key)` is what stops a repeated or
 overlapping tick from sending the same reminder twice.
 
+Wake windows are read as a budget for the day rather than three separate timers: 3 + 4 + 4
+means eleven hours awake. A stretch that runs short or long is shared out equally over the
+windows still to come, so the total holds — `wakeBudget.ts`, shared with the app so both
+predict the same times, with a floor and a ceiling so one odd day can't produce a
+fifteen-minute or a nine-hour window.
+
 Reminders only exist while the settings they come from do: no wake windows means no
 `nap_due`/`bedtime_due`, and no nap lengths means no `nap_end`. The feeding interval is a
 single shared row in `feeding_settings`, edited in Settings and seeded at 1.5 hours;
@@ -33,8 +39,10 @@ The source of truth is `functions/notify-sleep/`: `index.ts` for the runtime and
 are deployed with the Supabase MCP `deploy_edge_function` tool — edit them, then redeploy
 so the running function matches the repo.
 
-`schedule.ts` has no dependencies and is covered by `schedule.test.mts`; run it with
-`npm test`. These reminders fire when nobody is watching, so the timing rules are pinned
+`schedule.ts` and `wakeBudget.ts` have no dependencies and are covered by
+`schedule.test.mts` and `src/lib/wakeBudget.test.mts`; run both with `npm test`.
+`wakeBudget.ts` is a copy of `src/lib/wakeBudget.ts` — edit the original, copy it over,
+and redeploy, or the app and the reminders will drift apart. These reminders fire when nobody is watching, so the timing rules are pinned
 down there rather than checked by hand.
 
 ### Keys

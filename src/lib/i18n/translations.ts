@@ -171,7 +171,7 @@ const en = {
     wakeWindowPlaceholder: "e.g. 3.5",
     removeWakeWindowAria: (n: number) => `Remove wake window ${n}`,
     wakeWindowsHint:
-      "How long he should stay awake before each nap, in order. The last value repeats for any later naps.",
+      "How long he should stay awake before each nap, in order. They add up to the day's total awake time: if one stretch runs short or long, the windows left adjust to keep that total. The last value repeats for any later naps.",
     feedingInterval: "Feeding interval",
     feedingIntervalPlaceholder: "e.g. 1.5",
     feedingIntervalHint:
@@ -370,7 +370,7 @@ const bs: Translations = {
     wakeWindowPlaceholder: "npr. 3.5",
     removeWakeWindowAria: (n: number) => `Ukloni prozor budnosti ${n}`,
     wakeWindowsHint:
-      "Koliko dugo treba biti budan prije svake dremke, redoslijedom. Posljednja vrijednost se ponavlja za sve naredne dremke.",
+      "Koliko dugo treba biti budan prije svake dremke, redoslijedom. Zbir je ukupno vrijeme budnosti u danu: ako jedan period bude kraći ili duži, preostali prozori se prilagode da zbir ostane isti. Posljednja vrijednost se ponavlja za sve naredne dremke.",
     feedingInterval: "Interval hranjenja",
     feedingIntervalPlaceholder: "npr. 1.5",
     feedingIntervalHint:
@@ -567,7 +567,7 @@ const de: Translations = {
     wakeWindowPlaceholder: "z. B. 3.5",
     removeWakeWindowAria: (n: number) => `Wachfenster ${n} entfernen`,
     wakeWindowsHint:
-      "Wie lange er vor jedem Nickerchen wach bleiben soll, der Reihe nach. Der letzte Wert wiederholt sich für alle weiteren Nickerchen.",
+      "Wie lange er vor jedem Nickerchen wach bleiben soll, der Reihe nach. Zusammen ergeben sie die gesamte Wachzeit des Tages: fällt eine Phase kürzer oder länger aus, passen sich die verbleibenden Fenster an, damit die Summe stimmt. Der letzte Wert wiederholt sich für alle weiteren Nickerchen.",
     feedingInterval: "Fütterungsabstand",
     feedingIntervalPlaceholder: "z. B. 1.5",
     feedingIntervalHint:

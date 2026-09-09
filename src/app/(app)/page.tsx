@@ -18,6 +18,7 @@ import {
   nightAttributionDay,
   sessionDurationMinutes,
 } from "@/lib/time";
+import { adjustedWakeWindowHours, completedAwakeHours } from "@/lib/wakeBudget";
 import { feedTypeIcon, type FeedType } from "@/lib/feedingTypes";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -206,15 +207,16 @@ export default function HomePage() {
   const statusSession = openSession ?? lastEndedSession ?? null;
   const statusTime = openSession ? openSession.started_at : (lastEndedSession?.ended_at ?? null);
 
-  const completedNapsSinceWake = morningWake
-    ? daySessions.filter(
-        (s) => !s.is_night_sleep && s.ended_at && parseISO(s.started_at) >= morningWake,
-      ).length
-    : 0;
-  const wakeWindowHours =
-    wakeWindows.length > 0
-      ? wakeWindows[Math.min(completedNapsSinceWake, wakeWindows.length - 1)].hours
-      : null;
+  // How long each finished awake stretch actually lasted, which is what the wake windows
+  // are measured against — they're a budget for the day, not three separate timers.
+  const awakeSoFarHours = morningWake
+    ? completedAwakeHours(morningWake.getTime(), daySessions)
+    : [];
+  const completedNapsSinceWake = awakeSoFarHours.length;
+  const wakeWindowHours = adjustedWakeWindowHours(
+    wakeWindows.map((w) => w.hours),
+    awakeSoFarHours,
+  );
   const isLastWakeWindow = wakeWindows.length > 0 && completedNapsSinceWake >= wakeWindows.length - 1;
   const nextNapAt =
     !openSession && statusTime && wakeWindowHours != null

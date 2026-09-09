@@ -49,25 +49,46 @@ test("awake with no naps yet counts down the first wake window", () => {
 });
 
 test("each finished nap moves on to the next wake window", () => {
+  // Awake 07:00–10:00 is the planned three hours, so the next window is the plain 3.75.
   const sessions = [LAST_NIGHT, nap("n1", "2026-09-09T10:00:00Z", "2026-09-09T11:00:00Z")];
   assert.deepEqual(only(due(sessions), "nap_due"), [
     { kind: "nap_due", target: "2026-09-09T14:35:00.000Z", key: "n1" },
   ]);
 });
 
+test("a short awake stretch pushes the next nap later, by the budget", () => {
+  // Awake 07:00–09:00: an hour short, split over the two windows left, so the next one
+  // runs 3.75 + 0.5 = 4.25h from 10:00 and the heads-up lands ten minutes before.
+  const sessions = [LAST_NIGHT, nap("n1", "2026-09-09T09:00:00Z", "2026-09-09T10:00:00Z")];
+  assert.deepEqual(only(due(sessions), "nap_due"), [
+    { kind: "nap_due", target: "2026-09-09T14:05:00.000Z", key: "n1" },
+  ]);
+});
+
+test("a long awake stretch brings the next nap forward, by the budget", () => {
+  // Awake 07:00–11:00: an hour over, taken back over the two windows left, so 3.25h.
+  const sessions = [LAST_NIGHT, nap("n1", "2026-09-09T11:00:00Z", "2026-09-09T12:00:00Z")];
+  assert.deepEqual(only(due(sessions, [], new Date("2026-09-09T13:00:00Z")), "nap_due"), [
+    { kind: "nap_due", target: "2026-09-09T15:05:00.000Z", key: "n1" },
+  ]);
+});
+
 test("the last wake window of the day is bedtime, and it repeats", () => {
+  // Both stretches on plan — 3h then 3.75h — so bedtime is the plain 4.25h later.
   const two = [
     LAST_NIGHT,
-    nap("n1", "2026-09-09T08:00:00Z", "2026-09-09T09:00:00Z"),
-    nap("n2", "2026-09-09T10:00:00Z", "2026-09-09T11:00:00Z"),
+    nap("n1", "2026-09-09T10:00:00Z", "2026-09-09T11:00:00Z"),
+    nap("n2", "2026-09-09T14:45:00Z", "2026-09-09T15:30:00Z"),
   ];
-  assert.deepEqual(only(due(two), "bedtime_due"), [
-    { kind: "bedtime_due", target: "2026-09-09T15:05:00.000Z", key: "n2" },
+  const afternoon = new Date("2026-09-09T16:00:00Z");
+  assert.deepEqual(only(due(two, [], afternoon), "bedtime_due"), [
+    { kind: "bedtime_due", target: "2026-09-09T19:35:00.000Z", key: "n2" },
   ]);
 
-  const three = [...two, nap("n3", "2026-09-09T11:10:00Z", "2026-09-09T11:30:00Z")];
-  assert.deepEqual(only(due(three), "bedtime_due"), [
-    { kind: "bedtime_due", target: "2026-09-09T15:35:00.000Z", key: "n3" },
+  // A fourth stretch has no window of its own; the budget stops and the last one repeats.
+  const three = [...two, nap("n3", "2026-09-09T15:40:00Z", "2026-09-09T16:00:00Z")];
+  assert.deepEqual(only(due(three, [], afternoon), "bedtime_due"), [
+    { kind: "bedtime_due", target: "2026-09-09T20:05:00.000Z", key: "n3" },
   ]);
 });
 
@@ -81,7 +102,7 @@ test("a nap in progress announces its own end and nothing else", () => {
 test("the second nap uses the second nap length", () => {
   const sessions = [
     LAST_NIGHT,
-    nap("n1", "2026-09-09T08:00:00Z", "2026-09-09T09:00:00Z"),
+    nap("n1", "2026-09-09T10:00:00Z", "2026-09-09T11:00:00Z"),
     nap("open", "2026-09-09T11:40:00Z", null),
   ];
   assert.deepEqual(only(due(sessions), "nap_end"), [
