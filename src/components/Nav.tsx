@@ -19,8 +19,8 @@ export function Nav() {
 
   return (
     <>
-      {/* Mobile top bar */}
-      <div className="flex items-center justify-center gap-2 border-b border-neutral-200 bg-white/95 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur sm:hidden dark:border-neutral-900 dark:bg-neutral-950/95">
+      {/* Mobile top bar — sticky, so it stays put like the tab bar at the other end. */}
+      <div className="sticky top-0 z-10 flex items-center justify-center gap-2 border-b border-neutral-200 bg-white/95 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur sm:hidden dark:border-neutral-900 dark:bg-neutral-950/95">
         <Image src="/icon.png" alt="" width={24} height={24} className="rounded-md" />
         <span className="text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
           Gicko
