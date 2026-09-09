@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, startOfMonth } from "date-fns";
-import { Apple, Download, Globe, Hourglass, LogOut, Palette, Timer, Trash2, User } from "lucide-react";
+import { Apple, Download, Globe, Hourglass, LogOut, Milk, Palette, Timer, Trash2, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -40,6 +40,9 @@ export default function SettingsPage() {
   const [napDurations, setNapDurations] = useState<Tables<"nap_durations">[]>([]);
   const [newNapDurationHours, setNewNapDurationHours] = useState("");
   const [addingNapDuration, setAddingNapDuration] = useState(false);
+  const [feedingIntervalHours, setFeedingIntervalHours] = useState("");
+  const [savingFeedingInterval, setSavingFeedingInterval] = useState(false);
+  const [feedingIntervalSaved, setFeedingIntervalSaved] = useState(false);
 
   const loadProfile = useCallback(async () => {
     const supabase = createClient();
@@ -83,13 +86,20 @@ export default function SettingsPage() {
     setNapDurations(data ?? []);
   }, []);
 
+  const loadFeedingInterval = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from("feeding_settings").select("interval_hours").maybeSingle();
+    setFeedingIntervalHours(data ? String(data.interval_hours) : "");
+  }, []);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial profile + solid foods + sleep settings fetch on mount
     loadProfile();
     loadSolidFoods();
     loadWakeWindows();
     loadNapDurations();
-  }, [loadProfile, loadSolidFoods, loadWakeWindows, loadNapDurations]);
+    loadFeedingInterval();
+  }, [loadProfile, loadSolidFoods, loadWakeWindows, loadNapDurations, loadFeedingInterval]);
 
   async function addSolidFood() {
     const name = newFoodName.trim();
@@ -155,6 +165,22 @@ export default function SettingsPage() {
     const supabase = createClient();
     await supabase.from("nap_durations").delete().eq("id", id);
     loadNapDurations();
+  }
+
+  async function saveFeedingInterval() {
+    const hours = Number(feedingIntervalHours.replace(",", "."));
+    if (!hours || hours <= 0) return;
+
+    setSavingFeedingInterval(true);
+    setFeedingIntervalSaved(false);
+    const supabase = createClient();
+    // One shared row, so this is an update of the same id every time.
+    const { error: saveError } = await supabase
+      .from("feeding_settings")
+      .upsert({ id: true, interval_hours: hours }, { onConflict: "id" });
+    setSavingFeedingInterval(false);
+    if (!saveError) setFeedingIntervalSaved(true);
+    loadFeedingInterval();
   }
 
   async function signOut() {
@@ -449,6 +475,38 @@ export default function SettingsPage() {
         </div>
 
         <p className="mt-4 text-xs text-neutral-400">{t.settings.napDurationsHint}</p>
+      </div>
+
+      <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
+          <Milk className="h-4 w-4" strokeWidth={2} /> {t.settings.feedingInterval}
+        </h2>
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={feedingIntervalHours}
+            onChange={(e) => {
+              setFeedingIntervalHours(e.target.value);
+              setFeedingIntervalSaved(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") saveFeedingInterval();
+            }}
+            placeholder={t.settings.feedingIntervalPlaceholder}
+            className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-base dark:border-neutral-800 dark:bg-neutral-900"
+          />
+          <button
+            onClick={saveFeedingInterval}
+            disabled={savingFeedingInterval || !feedingIntervalHours.trim()}
+            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50"
+          >
+            {feedingIntervalSaved ? t.settings.saved : t.settings.save}
+          </button>
+        </div>
+
+        <p className="mt-4 text-xs text-neutral-400">{t.settings.feedingIntervalHint}</p>
       </div>
 
       <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">

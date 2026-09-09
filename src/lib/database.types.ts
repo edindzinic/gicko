@@ -38,6 +38,27 @@ export type Database = {
         }
         Relationships: []
       }
+      feeding_settings: {
+        Row: {
+          id: boolean
+          interval_hours: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: boolean
+          interval_hours?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: boolean
+          interval_hours?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       feedings: {
         Row: {
           amount: number | null

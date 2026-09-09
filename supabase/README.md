@@ -2,13 +2,19 @@
 
 ## notify-sleep (Edge Function)
 
-Sends the three sleep reminders as web push:
+Sends the sleep and feeding reminders as web push:
 
 | kind | when | based on |
 | --- | --- | --- |
 | `nap_due` | 10 min before the next nap is due | last wake-up + the wake window for that nap |
 | `bedtime_due` | 10 min before bedtime | same, once the wake windows run out |
 | `nap_end` | 5 min before a nap should end | nap start + the nap length for that nap |
+| `feeding_due` | 1h30 after the last feeding | the newest feeding, once the day's first one is logged |
+
+Feeding reminders only go out while he's awake. One that comes due mid-nap waits for the
+end of that nap, and a feed during the night doesn't start the cycle — so the morning
+wake-up never arrives with a reminder attached. A night waking keeps the sleep session
+open, which is what makes "awake" mean awake here.
 
 `pg_cron` calls it every minute (job `notify-sleep-tick`); the function works out whether
 anything is due and stays silent otherwise. A row in `notification_deliveries` is claimed
@@ -16,13 +22,20 @@ before sending, and its unique `(kind, dedupe_key)` is what stops a repeated or
 overlapping tick from sending the same reminder twice.
 
 Reminders only exist while the settings they come from do: no wake windows means no
-`nap_due`/`bedtime_due`, and no nap lengths means no `nap_end`.
+`nap_due`/`bedtime_due`, and no nap lengths means no `nap_end`. The feeding interval is a
+single shared row in `feeding_settings`, edited in Settings and seeded at 1.5 hours;
+`DEFAULT_FEEDING_INTERVAL_HOURS` covers the row being missing.
 
 ### Deploying
 
-The source of truth is `functions/notify-sleep/index.ts`. There is no Supabase CLI in this
-repo, so it is deployed with the Supabase MCP `deploy_edge_function` tool — edit the file,
-then redeploy it so the running function matches the repo.
+The source of truth is `functions/notify-sleep/`: `index.ts` for the runtime and
+`schedule.ts` for the timing rules. There is no Supabase CLI in this repo, so both files
+are deployed with the Supabase MCP `deploy_edge_function` tool — edit them, then redeploy
+so the running function matches the repo.
+
+`schedule.ts` has no dependencies and is covered by `schedule.test.mts`; run it with
+`npm test`. These reminders fire when nobody is watching, so the timing rules are pinned
+down there rather than checked by hand.
 
 ### Keys
 
@@ -36,6 +49,7 @@ nothing to set by hand, and no key in any env file.
 - `push_subscriptions` — one row per installed device, scoped to its owner by RLS.
 - `notification_deliveries` — the send-once ledger described above.
 - `push_config` — the VAPID keypair.
+- `feeding_settings` — the one editable timing, the gap between feedings.
 
 ### The cron job
 

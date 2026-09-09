@@ -1,10 +1,11 @@
 /**
- * Sleep reminders, sent as web push.
+ * Sleep and feeding reminders, sent as web push.
  *
- * Three kinds: a heads-up ten minutes before the next nap, the same before bedtime, and
- * a nudge five minutes before a nap should end so he can be woken. pg_cron calls this
- * once a minute (see the schedule_notify_sleep_tick migration); the app calls it with
- * { test: true } to prove a device is set up.
+ * Four kinds: a heads-up ten minutes before the next nap, the same before bedtime, a
+ * nudge five minutes before a nap should end so he can be woken, and a feeding reminder
+ * an hour and a half after the last one. pg_cron calls this once a minute (see the
+ * schedule_notify_sleep_tick migration); the app calls it with { test: true } to prove a
+ * device is set up.
  *
  * Deployed with the Supabase MCP tools from this file — edit here, then redeploy, so the
  * running function and the repo stay in step.
@@ -15,17 +16,20 @@
  */
 import webpush from "npm:web-push@3.6.7";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
+import {
+  computeDue,
+  DEFAULT_FEEDING_INTERVAL_HOURS,
+  type Feeding,
+  type Kind,
+  type Session,
+} from "./schedule.ts";
 
-const SLEEP_LEAD_MINUTES = 10;
-const WAKE_LEAD_MINUTES = 5;
 /** How late a tick may be and still send. Past that the moment has gone; stay quiet. */
 const FIRE_WINDOW_MS = 2 * 60 * 1000;
-/** Naps are counted from here when no night sleep is on record — enough to cover a day. */
-const FALLBACK_MORNING_HOURS = 14;
 const RECENT_SESSION_HOURS = 48;
 
 type Language = "en" | "bs" | "de";
-type Kind = "nap_due" | "bedtime_due" | "nap_end" | "test";
+type Subscriber = { endpoint: string; p256dh: string; auth: string; language: Language };
 
 const COPY: Record<Kind, Record<Language, { title: string; body: string }>> = {
   nap_due: {
@@ -43,94 +47,17 @@ const COPY: Record<Kind, Record<Language, { title: string; body: string }>> = {
     bs: { title: "Probudi ga za 5 minuta", body: "Dremka je skoro dostigla predviđenu dužinu." },
     de: { title: "Weck ihn in 5 Minuten", body: "Das Nickerchen hat fast seine geplante Länge." },
   },
+  feeding_due: {
+    en: { title: "Time for a feeding", body: "An hour and a half since the last one." },
+    bs: { title: "Vrijeme za hranjenje", body: "Sat i po od zadnjeg hranjenja." },
+    de: { title: "Zeit für eine Mahlzeit", body: "Eineinhalb Stunden seit der letzten." },
+  },
   test: {
     en: { title: "Notifications are on", body: "This is what a Gicko reminder looks like." },
     bs: { title: "Obavještenja su uključena", body: "Ovako izgleda Gicko podsjetnik." },
     de: { title: "Benachrichtigungen sind aktiv", body: "So sieht eine Gicko-Erinnerung aus." },
   },
 };
-
-type Session = {
-  id: string;
-  started_at: string;
-  ended_at: string | null;
-  is_night_sleep: boolean;
-};
-
-type Due = {
-  kind: Exclude<Kind, "test">;
-  dedupeKey: string;
-  targetAt: Date;
-  ttlSeconds: number;
-};
-
-type Subscriber = { endpoint: string; p256dh: string; auth: string; language: Language };
-
-function latestBy(sessions: Session[], pick: (s: Session) => number) {
-  return sessions.reduce<Session | null>(
-    (latest, s) => (!latest || pick(s) > pick(latest) ? s : latest),
-    null,
-  );
-}
-
-/**
- * The one reminder that matters right now, or null. Either he's asleep and the nap has an
- * end to announce, or he's awake and the wake window has an end to announce — never both.
- *
- * The nap index rule mirrors completedNapsSinceWake in src/app/(app)/page.tsx: naps
- * already finished since this morning's wake-up, with the last configured value repeating
- * for any nap after the list runs out.
- */
-export function computeDue(
-  now: Date,
-  sessions: Session[],
-  wakeWindowHours: number[],
-  napDurationHours: number[],
-): Due | null {
-  const open = latestBy(
-    sessions.filter((s) => !s.ended_at),
-    (s) => Date.parse(s.started_at),
-  );
-  const ended = sessions.filter((s) => s.ended_at);
-  const lastEnded = latestBy(ended, (s) => Date.parse(s.ended_at!));
-  const lastNight = latestBy(
-    ended.filter((s) => s.is_night_sleep),
-    (s) => Date.parse(s.ended_at!),
-  );
-
-  const morningWake = lastNight
-    ? Date.parse(lastNight.ended_at!)
-    : now.getTime() - FALLBACK_MORNING_HOURS * 3600_000;
-  const completedNaps = ended.filter(
-    (s) => !s.is_night_sleep && Date.parse(s.started_at) >= morningWake,
-  ).length;
-
-  if (open) {
-    // Night sleep has no expected end to announce — the morning is when it's over.
-    if (open.is_night_sleep || napDurationHours.length === 0) return null;
-    const hours = napDurationHours[Math.min(completedNaps, napDurationHours.length - 1)];
-    return {
-      kind: "nap_end",
-      dedupeKey: open.id,
-      targetAt: new Date(
-        Date.parse(open.started_at) + hours * 3600_000 - WAKE_LEAD_MINUTES * 60_000,
-      ),
-      ttlSeconds: WAKE_LEAD_MINUTES * 60,
-    };
-  }
-
-  if (!lastEnded || wakeWindowHours.length === 0) return null;
-  const hours = wakeWindowHours[Math.min(completedNaps, wakeWindowHours.length - 1)];
-  const isBedtime = completedNaps >= wakeWindowHours.length - 1;
-  return {
-    kind: isBedtime ? "bedtime_due" : "nap_due",
-    dedupeKey: lastEnded.id,
-    targetAt: new Date(
-      Date.parse(lastEnded.ended_at!) + hours * 3600_000 - SLEEP_LEAD_MINUTES * 60_000,
-    ),
-    ttlSeconds: SLEEP_LEAD_MINUTES * 60,
-  };
-}
 
 /**
  * The project's VAPID identity, minted on first use. The insert is conditional, so two
@@ -253,48 +180,69 @@ Deno.serve(async (req) => {
 
   const now = new Date();
   const since = new Date(now.getTime() - RECENT_SESSION_HOURS * 3600_000).toISOString();
-  const [sessions, wakeWindows, napDurations] = await Promise.all([
+  const [sessions, feedings, wakeWindows, napDurations, feedingSettings] = await Promise.all([
     supabase
       .from("sleep_sessions")
       .select("id, started_at, ended_at, is_night_sleep")
       .gte("started_at", since),
+    supabase.from("feedings").select("id, occurred_at").gte("occurred_at", since),
     supabase.from("wake_windows").select("hours").order("position"),
     supabase.from("nap_durations").select("hours").order("position"),
+    supabase.from("feeding_settings").select("interval_hours").maybeSingle(),
   ]);
 
-  const due = computeDue(
-    now,
-    (sessions.data ?? []) as Session[],
-    (wakeWindows.data ?? []).map((w) => Number(w.hours)),
-    (napDurations.data ?? []).map((n) => Number(n.hours)),
-  );
-  if (!due) return json({ sent: 0, reason: "nothing to announce" });
+  const due = computeDue(now, (sessions.data ?? []) as Session[], (feedings.data ?? []) as Feeding[], {
+    wakeWindowHours: (wakeWindows.data ?? []).map((w) => Number(w.hours)),
+    napDurationHours: (napDurations.data ?? []).map((n) => Number(n.hours)),
+    feedingIntervalHours:
+      Number(feedingSettings.data?.interval_hours) || DEFAULT_FEEDING_INTERVAL_HOURS,
+  });
 
-  const lateBy = now.getTime() - due.targetAt.getTime();
-  if (lateBy < 0 || lateBy >= FIRE_WINDOW_MS) {
-    return json({ sent: 0, reason: "not due", kind: due.kind, targetAt: due.targetAt });
+  // A moment that has already passed by more than the window stays unannounced.
+  const fireable = due.filter((d) => {
+    const lateBy = now.getTime() - d.targetAt.getTime();
+    return lateBy >= 0 && lateBy < FIRE_WINDOW_MS;
+  });
+  if (!fireable.length) {
+    return json({
+      sent: 0,
+      reason: "nothing due",
+      pending: due.map((d) => ({ kind: d.kind, targetAt: d.targetAt })),
+    });
   }
 
   const subscribers = await loadSubscribers(supabase);
   if (!subscribers.length) return json({ sent: 0, reason: "no subscriptions" });
 
-  // Claiming the row is what makes this send-once: the unique key rejects every later
-  // caller for the same reminder, so an overlapping or retried tick stays silent.
-  const claim = await supabase
-    .from("notification_deliveries")
-    .insert({ kind: due.kind, dedupe_key: due.dedupeKey, target_at: due.targetAt.toISOString() })
-    .select("id")
-    .maybeSingle();
-  if (claim.error) {
-    if (claim.error.code === "23505") return json({ sent: 0, reason: "already sent", kind: due.kind });
-    return json({ error: claim.error.message }, 500);
+  const results = [];
+  for (const item of fireable) {
+    // Claiming the row is what makes this send-once: the unique key rejects every later
+    // caller for the same reminder, so an overlapping or retried tick stays silent.
+    const claim = await supabase
+      .from("notification_deliveries")
+      .insert({
+        kind: item.kind,
+        dedupe_key: item.dedupeKey,
+        target_at: item.targetAt.toISOString(),
+      })
+      .select("id")
+      .maybeSingle();
+    if (claim.error) {
+      results.push({
+        kind: item.kind,
+        sent: 0,
+        reason: claim.error.code === "23505" ? "already sent" : claim.error.message,
+      });
+      continue;
+    }
+
+    const result = await send(supabase, subscribers, item.kind, item.ttlSeconds);
+    await supabase
+      .from("notification_deliveries")
+      .update({ sent_count: result.sent })
+      .eq("id", claim.data!.id);
+    results.push({ kind: item.kind, targetAt: item.targetAt, ...result });
   }
 
-  const result = await send(supabase, subscribers, due.kind, due.ttlSeconds);
-  await supabase
-    .from("notification_deliveries")
-    .update({ sent_count: result.sent })
-    .eq("id", claim.data!.id);
-
-  return json({ kind: due.kind, targetAt: due.targetAt, ...result });
+  return json({ results });
 });

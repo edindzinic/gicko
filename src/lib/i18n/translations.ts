@@ -155,7 +155,7 @@ const en = {
     solidFoodsHint: "These show up as options when logging a solid feeding.",
     notifications: "Notifications",
     notificationsHint:
-      "Ten minutes before a nap or bedtime is due, and five minutes before a nap should end. Each device is separate.",
+      "Ten minutes before a nap or bedtime is due, five minutes before a nap should end, and an hour and a half after each feeding while he's awake. Each device is separate.",
     notificationsOn: "On for this device",
     enableNotifications: "Turn on for this device",
     disableNotifications: "Turn off",
@@ -172,6 +172,12 @@ const en = {
     removeWakeWindowAria: (n: number) => `Remove wake window ${n}`,
     wakeWindowsHint:
       "How long he should stay awake before each nap, in order. The last value repeats for any later naps.",
+    feedingInterval: "Feeding interval",
+    feedingIntervalPlaceholder: "e.g. 1.5",
+    feedingIntervalHint:
+      "How long after a feeding the next one is due, in hours. Used for the feeding reminder.",
+    save: "Save",
+    saved: "Saved",
     napDurations: "Nap lengths",
     napDurationPlaceholder: "e.g. 1.5",
     removeNapDurationAria: (n: number) => `Remove nap length ${n}`,
@@ -348,7 +354,7 @@ const bs: Translations = {
     solidFoodsHint: "Ove namirnice se pojavljuju kao opcije prilikom bilježenja krute hrane.",
     notifications: "Obavještenja",
     notificationsHint:
-      "Deset minuta prije dremke ili spavanja, i pet minuta prije nego dremka treba završiti. Svaki uređaj se uključuje posebno.",
+      "Deset minuta prije dremke ili spavanja, pet minuta prije nego dremka treba završiti, i sat i po nakon svakog hranjenja dok je budan. Svaki uređaj se uključuje posebno.",
     notificationsOn: "Uključeno na ovom uređaju",
     enableNotifications: "Uključi na ovom uređaju",
     disableNotifications: "Isključi",
@@ -365,6 +371,12 @@ const bs: Translations = {
     removeWakeWindowAria: (n: number) => `Ukloni prozor budnosti ${n}`,
     wakeWindowsHint:
       "Koliko dugo treba biti budan prije svake dremke, redoslijedom. Posljednja vrijednost se ponavlja za sve naredne dremke.",
+    feedingInterval: "Interval hranjenja",
+    feedingIntervalPlaceholder: "npr. 1.5",
+    feedingIntervalHint:
+      "Koliko sati nakon hranjenja slijedi sljedeće. Koristi se za podsjetnik o hranjenju.",
+    save: "Sačuvaj",
+    saved: "Sačuvano",
     napDurations: "Dužina dremki",
     napDurationPlaceholder: "npr. 1.5",
     removeNapDurationAria: (n: number) => `Ukloni dužinu dremke ${n}`,
@@ -539,7 +551,7 @@ const de: Translations = {
     solidFoodsHint: "Diese erscheinen als Optionen beim Erfassen einer Fütterung mit fester Nahrung.",
     notifications: "Benachrichtigungen",
     notificationsHint:
-      "Zehn Minuten vor einem Nickerchen oder der Schlafenszeit, und fünf Minuten bevor ein Nickerchen enden soll. Jedes Gerät wird einzeln aktiviert.",
+      "Zehn Minuten vor einem Nickerchen oder der Schlafenszeit, fünf Minuten bevor ein Nickerchen enden soll, und eineinhalb Stunden nach jeder Mahlzeit, solange er wach ist. Jedes Gerät wird einzeln aktiviert.",
     notificationsOn: "Auf diesem Gerät aktiv",
     enableNotifications: "Auf diesem Gerät aktivieren",
     disableNotifications: "Deaktivieren",
@@ -556,6 +568,12 @@ const de: Translations = {
     removeWakeWindowAria: (n: number) => `Wachfenster ${n} entfernen`,
     wakeWindowsHint:
       "Wie lange er vor jedem Nickerchen wach bleiben soll, der Reihe nach. Der letzte Wert wiederholt sich für alle weiteren Nickerchen.",
+    feedingInterval: "Fütterungsabstand",
+    feedingIntervalPlaceholder: "z. B. 1.5",
+    feedingIntervalHint:
+      "Wie viele Stunden nach einer Mahlzeit die nächste fällig ist. Wird für die Erinnerung verwendet.",
+    save: "Speichern",
+    saved: "Gespeichert",
     napDurations: "Nickerchen-Dauer",
     napDurationPlaceholder: "z. B. 1.5",
     removeNapDurationAria: (n: number) => `Nickerchen-Dauer ${n} entfernen`,
