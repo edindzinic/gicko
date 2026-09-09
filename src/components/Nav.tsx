@@ -20,7 +20,7 @@ export function Nav() {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="flex items-center justify-center gap-2 border-b border-neutral-200 bg-white/95 py-3 backdrop-blur sm:hidden dark:border-neutral-900 dark:bg-neutral-950/95">
+      <div className="flex items-center justify-center gap-2 border-b border-neutral-200 bg-white/95 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur sm:hidden dark:border-neutral-900 dark:bg-neutral-950/95">
         <Image src="/icon.png" alt="" width={24} height={24} className="rounded-md" />
         <span className="text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
           Gicko
@@ -54,7 +54,7 @@ export function Nav() {
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-neutral-200 bg-white/95 backdrop-blur sm:hidden dark:border-neutral-900 dark:bg-neutral-950/95">
+      <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-neutral-200 bg-white/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden dark:border-neutral-900 dark:bg-neutral-950/95">
         {links.map(({ href, label, Icon }) => (
           <Link
             key={href}

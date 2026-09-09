@@ -37,6 +37,9 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  // Draws into the safe areas so env(safe-area-inset-*) reports the real insets — the
+  // bottom nav uses that to stay clear of the iPhone home indicator.
+  viewportFit: "cover" as const,
   // Keeps the status bar readable in both themes once installed.
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#fafafa" },
