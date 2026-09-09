@@ -6,6 +6,7 @@ import {
   disablePush,
   enablePush,
   getPushState,
+  prefetchPushKey,
   registerServiceWorker,
   sendTestPush,
   type PushState,
@@ -17,6 +18,9 @@ export function NotificationSettings() {
   const [state, setState] = useState<PushState | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Kept alongside the friendly line: "try again" alone gives nothing to act on when the
+  // failure is something like a blocked request or a push service refusing to subscribe.
+  const [detail, setDetail] = useState<string | null>(null);
   const [testSent, setTestSent] = useState(false);
 
   useEffect(() => {
@@ -26,20 +30,27 @@ export function NotificationSettings() {
       .then(getPushState)
       .then((next) => {
         if (live) setState(next);
+        if (next === "off") prefetchPushKey();
       });
     return () => {
       live = false;
     };
   }, []);
 
+  function fail(e: unknown) {
+    setError(t.settings.notificationsError);
+    setDetail(e instanceof Error ? e.message : String(e));
+  }
+
   async function run(action: () => Promise<PushState>) {
     setBusy(true);
     setError(null);
+    setDetail(null);
     setTestSent(false);
     try {
       setState(await action());
-    } catch {
-      setError(t.settings.notificationsError);
+    } catch (e) {
+      fail(e);
     } finally {
       setBusy(false);
     }
@@ -48,12 +59,16 @@ export function NotificationSettings() {
   async function test() {
     setBusy(true);
     setError(null);
+    setDetail(null);
     try {
       const result = await sendTestPush();
       if (result?.sent) setTestSent(true);
-      else setError(t.settings.notificationsError);
-    } catch {
-      setError(t.settings.notificationsError);
+      else {
+        setError(t.settings.notificationsError);
+        setDetail(result?.reason ?? null);
+      }
+    } catch (e) {
+      fail(e);
     } finally {
       setBusy(false);
     }
@@ -108,7 +123,12 @@ export function NotificationSettings() {
         </button>
       )}
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <>
+          <p className="mt-3 text-sm text-red-600">{error}</p>
+          {detail && <p className="mt-1 text-xs break-words text-neutral-400">{detail}</p>}
+        </>
+      )}
 
       <p className="mt-4 text-xs text-neutral-400">{t.settings.notificationsHint}</p>
     </div>

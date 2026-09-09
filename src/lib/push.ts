@@ -44,6 +44,15 @@ async function vapidPublicKey() {
   return cachedPublicKey;
 }
 
+/**
+ * Warms the key cache so enabling push doesn't wait on a round trip. iOS is strict about
+ * how much can happen between the tap and the subscribe call, and this is the one part
+ * that needs the network.
+ */
+export function prefetchPushKey() {
+  return vapidPublicKey().catch(() => null);
+}
+
 /** Base64url VAPID key in the byte form PushManager.subscribe expects. */
 function toApplicationServerKey(base64: string) {
   const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");

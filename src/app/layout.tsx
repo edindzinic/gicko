@@ -30,7 +30,10 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   // Installed to the iOS home screen it runs without Safari's chrome, which is also the
   // only way iOS delivers web push.
-  appleWebApp: { capable: true, title: "Gicko", statusBarStyle: "black-translucent" },
+  // Not black-translucent: with viewport-fit=cover that draws the page under the clock,
+  // so a scrolled list ends up behind the status bar. iOS reserves that strip instead and
+  // tints it with the theme colour below.
+  appleWebApp: { capable: true, title: "Gicko", statusBarStyle: "default" },
 };
 
 export const viewport = {
