@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Deno, not Next — typechecked and linted by the Supabase runtime instead.
+    "supabase/functions/**",
   ]),
 ]);
 

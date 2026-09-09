@@ -153,6 +153,20 @@ const en = {
     foodAlreadyExists: "That food is already on the list.",
     foodAddError: "Couldn't add that food.",
     solidFoodsHint: "These show up as options when logging a solid feeding.",
+    notifications: "Notifications",
+    notificationsHint:
+      "Ten minutes before a nap or bedtime is due, and five minutes before a nap should end. Each device is separate.",
+    notificationsOn: "On for this device",
+    enableNotifications: "Turn on for this device",
+    disableNotifications: "Turn off",
+    sendTestNotification: "Send a test",
+    testNotificationSent: "Sent — check your notifications.",
+    notificationsDenied:
+      "Notifications are blocked for Gicko. Allow them in your browser or system settings first.",
+    notificationsUnsupported: "This browser can't show notifications.",
+    notificationsNeedsInstall:
+      "On iPhone, add Gicko to your home screen first: tap Share, then \u201cAdd to Home Screen\u201d, and open it from there.",
+    notificationsError: "That didn't work. Try again.",
     wakeWindows: "Wake windows",
     wakeWindowPlaceholder: "e.g. 3.5",
     removeWakeWindowAria: (n: number) => `Remove wake window ${n}`,
@@ -332,6 +346,20 @@ const bs: Translations = {
     foodAlreadyExists: "Ta namirnica je već na listi.",
     foodAddError: "Nije moguće dodati namirnicu.",
     solidFoodsHint: "Ove namirnice se pojavljuju kao opcije prilikom bilježenja krute hrane.",
+    notifications: "Obavještenja",
+    notificationsHint:
+      "Deset minuta prije dremke ili spavanja, i pet minuta prije nego dremka treba završiti. Svaki uređaj se uključuje posebno.",
+    notificationsOn: "Uključeno na ovom uređaju",
+    enableNotifications: "Uključi na ovom uređaju",
+    disableNotifications: "Isključi",
+    sendTestNotification: "Pošalji test",
+    testNotificationSent: "Poslano — provjeri obavještenja.",
+    notificationsDenied:
+      "Obavještenja su blokirana za Gicko. Dozvoli ih u postavkama pregledača ili sistema.",
+    notificationsUnsupported: "Ovaj pregledač ne podržava obavještenja.",
+    notificationsNeedsInstall:
+      "Na iPhoneu prvo dodaj Gicko na početni ekran: dodirni Podijeli, pa \u201cDodaj na početni ekran\u201d, i otvori ga odatle.",
+    notificationsError: "Nije uspjelo. Pokušaj ponovo.",
     wakeWindows: "Prozori budnosti",
     wakeWindowPlaceholder: "npr. 3.5",
     removeWakeWindowAria: (n: number) => `Ukloni prozor budnosti ${n}`,
@@ -509,6 +537,20 @@ const de: Translations = {
     foodAlreadyExists: "Dieses Lebensmittel ist bereits auf der Liste.",
     foodAddError: "Lebensmittel konnte nicht hinzugefügt werden.",
     solidFoodsHint: "Diese erscheinen als Optionen beim Erfassen einer Fütterung mit fester Nahrung.",
+    notifications: "Benachrichtigungen",
+    notificationsHint:
+      "Zehn Minuten vor einem Nickerchen oder der Schlafenszeit, und fünf Minuten bevor ein Nickerchen enden soll. Jedes Gerät wird einzeln aktiviert.",
+    notificationsOn: "Auf diesem Gerät aktiv",
+    enableNotifications: "Auf diesem Gerät aktivieren",
+    disableNotifications: "Deaktivieren",
+    sendTestNotification: "Test senden",
+    testNotificationSent: "Gesendet — schau in deine Benachrichtigungen.",
+    notificationsDenied:
+      "Benachrichtigungen sind für Gicko blockiert. Erlaube sie in den Browser- oder Systemeinstellungen.",
+    notificationsUnsupported: "Dieser Browser kann keine Benachrichtigungen anzeigen.",
+    notificationsNeedsInstall:
+      "Auf dem iPhone zuerst Gicko zum Home-Bildschirm hinzufügen: auf Teilen tippen, dann \u201cZum Home-Bildschirm\u201d, und von dort öffnen.",
+    notificationsError: "Hat nicht funktioniert. Versuche es erneut.",
     wakeWindows: "Wachfenster",
     wakeWindowPlaceholder: "z. B. 3.5",
     removeWakeWindowAria: (n: number) => `Wachfenster ${n} entfernen`,

@@ -27,12 +27,21 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Gicko",
   description: "Sleep and feeding tracker",
+  manifest: "/manifest.webmanifest",
+  // Installed to the iOS home screen it runs without Safari's chrome, which is also the
+  // only way iOS delivers web push.
+  appleWebApp: { capable: true, title: "Gicko", statusBarStyle: "black-translucent" },
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  // Keeps the status bar readable in both themes once installed.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 export default function RootLayout({

@@ -154,6 +154,33 @@ export type Database = {
           },
         ]
       }
+      notification_deliveries: {
+        Row: {
+          created_at: string
+          dedupe_key: string
+          id: string
+          kind: string
+          sent_count: number
+          target_at: string
+        }
+        Insert: {
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          kind: string
+          sent_count?: number
+          target_at: string
+        }
+        Update: {
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          kind?: string
+          sent_count?: number
+          target_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -208,6 +235,33 @@ export type Database = {
           id?: string
           notes?: string | null
           occurred_at?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          created_by: string
+          endpoint: string
+          p256dh: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          created_by?: string
+          endpoint: string
+          p256dh: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          created_by?: string
+          endpoint?: string
+          p256dh?: string
+          user_agent?: string | null
         }
         Relationships: []
       }

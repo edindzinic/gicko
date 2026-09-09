@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { NotificationSettings } from "@/components/NotificationSettings";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import {
   collectNightWakeUps,
@@ -339,6 +340,8 @@ export default function SettingsPage() {
 
         <p className="mt-4 text-xs text-neutral-400">{t.settings.solidFoodsHint}</p>
       </div>
+
+      <NotificationSettings />
 
       <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
