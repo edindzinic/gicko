@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { addDays, eachDayOfInterval, endOfDay, format, isToday, parseISO, startOfDay, subDays } from "date-fns";
-import { Bed, Droplet, GlassWater, Hash, Hourglass, Milk, Moon, Sun, Timer } from "lucide-react";
+import { Bed, GlassWater, Hash, Hourglass, Milk, Moon, Sun, Timer } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
 import { TrendlineChart, type TrendPoint } from "@/components/TrendlineChart";
@@ -16,7 +16,6 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
-type PumpingSession = Tables<"pumping_sessions">;
 
 function toInputValue(date: Date) {
   return format(date, "yyyy-MM-dd");
@@ -29,25 +28,10 @@ export default function DashboardPage() {
   const [from, setFrom] = useState(toInputValue(subDays(new Date(), 13)));
   const [to, setTo] = useState(toInputValue(new Date()));
   const [loading, setLoading] = useState(true);
-  const [isMom, setIsMom] = useState(false);
   const [sessions, setSessions] = useState<SleepSession[]>([]);
   const [nightSessions, setNightSessions] = useState<SleepSession[]>([]);
   const [feedings, setFeedings] = useState<Feeding[]>([]);
-  const [pumping, setPumping] = useState<PumpingSession[]>([]);
   const [nightWakings, setNightWakings] = useState<Tables<"night_wakings">[]>([]);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_mom")
-        .eq("id", user.id)
-        .single();
-      setIsMom(profile?.is_mom ?? false);
-    });
-  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,7 +41,7 @@ export default function DashboardPage() {
     const bufferedStart = addDays(rangeStart, -1).toISOString();
     const bufferedEnd = addDays(rangeEnd, 1).toISOString();
 
-    const [{ data: s }, { data: nights }, { data: f }, { data: p }, { data: wakings }] = await Promise.all([
+    const [{ data: s }, { data: nights }, { data: f }, { data: wakings }] = await Promise.all([
       supabase
         .from("sleep_sessions")
         .select("*")
@@ -71,11 +55,6 @@ export default function DashboardPage() {
         .gte("occurred_at", rangeStart.toISOString())
         .lte("occurred_at", rangeEnd.toISOString()),
       supabase
-        .from("pumping_sessions")
-        .select("*")
-        .gte("occurred_at", rangeStart.toISOString())
-        .lte("occurred_at", rangeEnd.toISOString()),
-      supabase
         .from("night_wakings")
         .select("*")
         .gte("started_at", bufferedStart)
@@ -85,7 +64,6 @@ export default function DashboardPage() {
     setSessions(s ?? []);
     setNightSessions(nights ?? []);
     setFeedings(f ?? []);
-    setPumping(p ?? []);
     setNightWakings(wakings ?? []);
     setLoading(false);
   }, [from, to]);
@@ -106,7 +84,6 @@ export default function DashboardPage() {
   const wakeUpLengthPoints: TrendPoint[] = [];
   const feedingPoints: TrendPoint[] = [];
   const feedingMlPoints: TrendPoint[] = [];
-  const pumpingPoints: TrendPoint[] = [];
 
   for (const day of days) {
     const dayKey = format(day, "yyyy-MM-dd");
@@ -141,9 +118,6 @@ export default function DashboardPage() {
       if (feeding.amount == null) return sum;
       return sum + (feeding.unit === "oz" ? feeding.amount * 29.5735 : feeding.amount);
     }, 0);
-    const dayPumpingMl = pumping
-      .filter((session) => format(parseISO(session.occurred_at), "yyyy-MM-dd") === dayKey)
-      .reduce((sum, session) => sum + session.amount_ml, 0);
 
     nightSleepPoints.push({ day: dayKey, value: nightSleepMinutes });
     dayAwakePoints.push({ day: dayKey, value: dayAwakeMinutes });
@@ -153,7 +127,6 @@ export default function DashboardPage() {
     wakeUpLengthPoints.push({ day: dayKey, value: dayWakeUpAvgMinutes });
     feedingPoints.push({ day: dayKey, value: dayFeedingsCount });
     feedingMlPoints.push({ day: dayKey, value: dayFeedingMl });
-    pumpingPoints.push({ day: dayKey, value: dayPumpingMl });
   }
 
   return (
@@ -259,16 +232,6 @@ export default function DashboardPage() {
             averageLabel={t.dashboard.average}
             noDataLabel={t.dashboard.noData}
           />
-          {isMom && (
-            <TrendlineChart
-              icon={Droplet}
-              title={t.home.statPumping}
-              points={pumpingPoints}
-              formatValue={(v) => `${Math.round(v)}ml`}
-              averageLabel={t.dashboard.average}
-              noDataLabel={t.dashboard.noData}
-            />
-          )}
         </div>
       )}
     </div>
