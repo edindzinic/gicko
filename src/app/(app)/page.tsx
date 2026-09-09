@@ -446,9 +446,6 @@ export default function HomePage() {
                 {Math.round(totalMlToday)}ml
               </p>
               <p className="text-xs text-neutral-500">{t.home.statEaten}</p>
-              {dayFeedings.length > 0 && (
-                <p className="text-[11px] text-neutral-400">×{dayFeedings.length}</p>
-              )}
             </button>
             <button
               onClick={() => setShowWakeUpsBreakdown(true)}
