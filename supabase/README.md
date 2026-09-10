@@ -80,3 +80,10 @@ SQL side, where there is no `auth.uid()`. Both functions have `EXECUTE` revoked 
 
 The export button is admin-only in the UI, but that one is a courtesy rather than a wall:
 it reads sleep and feeding rows that everyone signed in can read anyway.
+
+## Staying current
+
+Nothing in the app is push-updated. Each screen refetches when it comes back to the
+foreground and on a slow interval while it is there — `src/lib/useAutoRefresh.ts` — which
+is what keeps one phone from showing a morning that the other has already moved on from.
+Polling stops while the tab is hidden.

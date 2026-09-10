@@ -32,6 +32,7 @@ import {
 } from "@/lib/time";
 import { FEED_TYPE_ICONS } from "@/lib/feedingTypes";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useAutoRefresh } from "@/lib/useAutoRefresh";
 
 const MOBILE_VISIBLE_DAYS = 3;
 const DESKTOP_VISIBLE_DAYS = 7;
@@ -87,8 +88,10 @@ export default function CalendarPage() {
   const gridEnd = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // A background refresh passes silent, so the month doesn't blink through its loading
+  // state every time it quietly catches up.
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const supabase = createClient();
     const start = gridStart.toISOString();
     const end = gridEnd.toISOString();
@@ -124,6 +127,10 @@ export default function CalendarPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- refetch when month changes
     load();
   }, [load, view]);
+
+  useAutoRefresh(() => {
+    if (view === "month") load(true);
+  });
 
   const statsByDay = useMemo(() => {
     const map = new Map<string, DayStats>();

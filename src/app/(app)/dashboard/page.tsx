@@ -13,6 +13,7 @@ import {
   nightAttributionDay,
 } from "@/lib/time";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useAutoRefresh } from "@/lib/useAutoRefresh";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
@@ -33,8 +34,10 @@ export default function DashboardPage() {
   const [feedings, setFeedings] = useState<Feeding[]>([]);
   const [nightWakings, setNightWakings] = useState<Tables<"night_wakings">[]>([]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // A background refresh passes silent, so the charts don't blink through their loading
+  // state every time they quietly catch up.
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const supabase = createClient();
     const rangeStart = startOfDay(parseISO(from));
     const rangeEnd = endOfDay(parseISO(to));
@@ -72,6 +75,8 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- refetch when the date range changes
     load();
   }, [load]);
+
+  useAutoRefresh(() => load(true));
 
   const days = parseISO(from) <= parseISO(to) ? eachDayOfInterval({ start: parseISO(from), end: parseISO(to) }) : [];
   const nightWakeUps = collectNightWakeUps(nightWakings);

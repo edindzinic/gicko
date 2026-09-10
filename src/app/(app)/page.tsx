@@ -25,6 +25,7 @@ import {
 } from "@/lib/dayBudget";
 import { feedTypeIcon, type FeedType } from "@/lib/feedingTypes";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useAutoRefresh } from "@/lib/useAutoRefresh";
 
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
@@ -155,6 +156,8 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- refetch when selected day changes
     load();
   }, [load]);
+
+  useAutoRefresh(load);
 
   async function startSleep(isNightSleep: boolean) {
     const supabase = createClient();
