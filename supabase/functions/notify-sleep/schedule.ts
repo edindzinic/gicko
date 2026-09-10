@@ -1,11 +1,13 @@
 /**
  * When each reminder is due. Pure date arithmetic, no dependencies — the runtime bits
  * live in index.ts, and schedule.test.mts exercises this file directly with `npm test`.
- * The wake-window budget it leans on is shared with the app; see wakeBudget.ts.
+ * The budget it leans on is shared with the app; see dayBudget.ts.
  */
 import { adjustedFromPlan, completedAwakeHours, completedNapHours } from "./dayBudget.ts";
 
-const SLEEP_LEAD_MINUTES = 10;
+const NAP_LEAD_MINUTES = 10;
+/** Bedtime gets longer notice: there's a bath at the start of it, not just a cot. */
+const BEDTIME_LEAD_MINUTES = 20;
 const WAKE_LEAD_MINUTES = 5;
 /** A feeding reminder stays useful for a while after the moment it names. */
 const FEEDING_TTL_SECONDS = 30 * 60;
@@ -107,13 +109,14 @@ export function computeDue(
   const hours = adjustedFromPlan(wakeWindowHours, awakeSoFarHours);
   if (lastEnded && hours !== null) {
     const isBedtime = completedNaps >= wakeWindowHours.length - 1;
+    const leadMinutes = isBedtime ? BEDTIME_LEAD_MINUTES : NAP_LEAD_MINUTES;
     due.push({
       kind: isBedtime ? "bedtime_due" : "nap_due",
       dedupeKey: lastEnded.id,
       targetAt: new Date(
-        Date.parse(lastEnded.ended_at!) + hours * 3600_000 - SLEEP_LEAD_MINUTES * 60_000,
+        Date.parse(lastEnded.ended_at!) + hours * 3600_000 - leadMinutes * 60_000,
       ),
-      ttlSeconds: SLEEP_LEAD_MINUTES * 60,
+      ttlSeconds: leadMinutes * 60,
     });
   }
 

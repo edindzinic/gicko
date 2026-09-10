@@ -7,9 +7,11 @@ Sends the sleep and feeding reminders as web push:
 | kind | when | based on |
 | --- | --- | --- |
 | `nap_due` | 10 min before the next nap is due | last wake-up + the wake window for that nap, adjusted |
-| `bedtime_due` | 10 min before bedtime | same, once the wake windows run out |
+| `bedtime_due` | 20 min before bedtime | same, once the wake windows run out |
 | `nap_end` | 5 min before a nap should end | nap start + the nap length for that nap, adjusted |
 | `feeding_due` | 1h30 after the last feeding | the newest feeding, once the day's first one is logged |
+
+Bedtime gets longer notice than a nap because there's a bath at the start of it.
 
 Feeding reminders only go out while he's awake. One that comes due mid-nap waits for the
 end of that nap, and a feed during the night doesn't start the cycle — so the morning

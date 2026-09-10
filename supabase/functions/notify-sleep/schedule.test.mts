@@ -74,7 +74,8 @@ test("a long awake stretch brings the next nap forward, by the budget", () => {
 });
 
 test("the last wake window of the day is bedtime, and it repeats", () => {
-  // Both stretches on plan — 3h then 3.75h — so bedtime is the plain 4.25h later.
+  // Both stretches on plan — 3h then 3.75h — so bedtime itself is the plain 4.25h after
+  // 15:30, at 19:45, and the reminder comes twenty minutes before that.
   const two = [
     LAST_NIGHT,
     nap("n1", "2026-09-09T10:00:00Z", "2026-09-09T11:00:00Z"),
@@ -82,14 +83,31 @@ test("the last wake window of the day is bedtime, and it repeats", () => {
   ];
   const afternoon = new Date("2026-09-09T16:00:00Z");
   assert.deepEqual(only(due(two, [], afternoon), "bedtime_due"), [
-    { kind: "bedtime_due", target: "2026-09-09T19:35:00.000Z", key: "n2" },
+    { kind: "bedtime_due", target: "2026-09-09T19:25:00.000Z", key: "n2" },
   ]);
 
   // A fourth stretch has no window of its own; the budget stops and the last one repeats.
   const three = [...two, nap("n3", "2026-09-09T15:40:00Z", "2026-09-09T16:00:00Z")];
   assert.deepEqual(only(due(three, [], afternoon), "bedtime_due"), [
-    { kind: "bedtime_due", target: "2026-09-09T20:05:00.000Z", key: "n3" },
+    { kind: "bedtime_due", target: "2026-09-09T19:55:00.000Z", key: "n3" },
   ]);
+});
+
+test("bedtime gives twice the notice a nap does", () => {
+  const beforeFirstNap = due([LAST_NIGHT]).find((d) => d.kind === "nap_due")!;
+  const napAt = Date.parse("2026-09-09T10:00:00Z"); // 07:00 + the 3h first window
+  assert.equal((napAt - beforeFirstNap.targetAt.getTime()) / 60_000, 10);
+
+  const twoNapsIn = [
+    LAST_NIGHT,
+    nap("n1", "2026-09-09T10:00:00Z", "2026-09-09T11:00:00Z"),
+    nap("n2", "2026-09-09T14:45:00Z", "2026-09-09T15:30:00Z"),
+  ];
+  const bedtime = due(twoNapsIn, [], new Date("2026-09-09T16:00:00Z")).find(
+    (d) => d.kind === "bedtime_due",
+  )!;
+  const bedtimeAt = Date.parse("2026-09-09T19:45:00Z"); // 15:30 + the 4.25h last window
+  assert.equal((bedtimeAt - bedtime.targetAt.getTime()) / 60_000, 20);
 });
 
 test("a nap in progress announces its own end and nothing else", () => {

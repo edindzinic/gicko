@@ -1,7 +1,7 @@
 /**
  * Sleep and feeding reminders, sent as web push.
  *
- * Four kinds: a heads-up ten minutes before the next nap, the same before bedtime, a
+ * Four kinds: a heads-up ten minutes before the next nap, twenty before bedtime, a
  * nudge five minutes before a nap should end so he can be woken, and a feeding reminder
  * an hour and a half after the last one. pg_cron calls this once a minute (see the
  * schedule_notify_sleep_tick migration); the app calls it with { test: true } to prove a
@@ -38,9 +38,9 @@ const COPY: Record<Kind, Record<Language, { title: string; body: string }>> = {
     de: { title: "Nickerchen in 10 Minuten", body: "Das Wachfenster ist fast vorbei." },
   },
   bedtime_due: {
-    en: { title: "Bedtime in 10 minutes", body: "The last wake window of the day is nearly up." },
-    bs: { title: "Spavanje za 10 minuta", body: "Posljednji prozor budnosti je skoro pri kraju." },
-    de: { title: "Schlafenszeit in 10 Minuten", body: "Das letzte Wachfenster des Tages ist fast vorbei." },
+    en: { title: "Time for a bath", body: "Bedtime is about twenty minutes away." },
+    bs: { title: "Vrijeme za kupanje", body: "Spavanje je za dvadesetak minuta." },
+    de: { title: "Zeit für das Bad", body: "In gut zwanzig Minuten ist Schlafenszeit." },
   },
   nap_end: {
     en: { title: "Wake him in 5 minutes", body: "The nap is almost as long as it should be." },
