@@ -4,7 +4,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { forecastRestOfDay, type ForecastSegment } from "./dayForecast.ts";
+import { awakeHoursSpent, forecastRestOfDay, type ForecastSegment } from "./dayForecast.ts";
 
 const PLAN = [3, 4, 4]; // eleven hours awake, so three windows and two naps
 const NAP_PLAN = [1.5, 1.25]; // two and three quarter hours asleep
@@ -101,4 +101,38 @@ test("no nap lengths predicts the window he's in and stops, rather than guessing
 
 test("a single wake window is the whole day: wake, then bedtime", () => {
   assert.deepEqual(shape(fromMorning({ wakeWindowPlan: [12] })), ["awake 07:00–19:00"]);
+});
+
+// The real day this was reported against: three windows, so two naps.
+const REAL_PLAN = [3, 3.75, 4];
+const REAL_NAP_PLAN = [1.25, 0.75];
+const nap = (start: string, end: string | null) => ({
+  started_at: new Date(start).toISOString(),
+  ended_at: end && new Date(end).toISOString(),
+  is_night_sleep: false,
+});
+
+test("the window before the nap he's on counts as spent, not still to come", () => {
+  // Awake 07:00–10:00, nap 10:00–11:15, awake 11:15–15:00, and down for the second nap.
+  const sessions = [nap("2026-09-09T10:00:00Z", "2026-09-09T11:15:00Z"), nap("2026-09-09T15:00:00Z", null)];
+  assert.deepEqual(awakeHoursSpent(morning, sessions, at("2026-09-09T15:00:00Z")), [3, 3.75]);
+});
+
+test("with no nap in progress it is just the stretches that have ended", () => {
+  const sessions = [nap("2026-09-09T10:00:00Z", "2026-09-09T11:15:00Z")];
+  assert.deepEqual(awakeHoursSpent(morning, sessions, null), [3]);
+});
+
+test("the second nap of a two-nap day is the last: bedtime follows it", () => {
+  const sessions = [nap("2026-09-09T10:00:00Z", "2026-09-09T11:15:00Z"), nap("2026-09-09T15:00:00Z", null)];
+  const segments = forecastRestOfDay({
+    anchorMs: at("2026-09-09T15:00:00Z"),
+    asleep: true,
+    wakeWindowPlan: REAL_PLAN,
+    napPlan: REAL_NAP_PLAN,
+    awakeSoFar: awakeHoursSpent(morning, sessions, at("2026-09-09T15:00:00Z")),
+    napsSoFar: [1.25],
+  });
+  assert.deepEqual(shape(segments), ["nap 15:00–15:45", "awake 15:45–19:45"]);
+  assert.equal(segments.at(-1)?.endsAtBedtime, true);
 });

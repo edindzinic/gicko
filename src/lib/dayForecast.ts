@@ -8,9 +8,35 @@
  * the windows after it here too — and the times on the timeline can't disagree with the
  * time on the card.
  */
-import { adjustedFromPlan } from "./dayBudget.ts";
+import { adjustedFromPlan, completedAwakeHours, type SleepLike } from "./dayBudget.ts";
 
 const HOUR_MS = 3600_000;
+
+/**
+ * The wake windows the day has already spent, including the one that ended when the nap
+ * he's on began.
+ *
+ * `completedAwakeHours` leaves that last one out on purpose: it closes a stretch only once
+ * the nap after it is over, which is what the reminders want, since until he's up again
+ * there's no next window to count down. A forecast needs the opposite. The window before
+ * this nap is spent, and treating it as still to come gives the day an extra window — and
+ * so an extra nap, laid out after a bedtime that should already have arrived.
+ */
+export function awakeHoursSpent(
+  morningWakeMs: number,
+  sessions: SleepLike[],
+  napInProgressStartMs: number | null,
+): number[] {
+  const ended = completedAwakeHours(morningWakeMs, sessions);
+  if (napInProgressStartMs == null) return ended;
+
+  // He has been awake since the last nap to finish, or since the morning if none have.
+  const lastWakeMs = sessions
+    .filter((s) => !s.is_night_sleep && s.ended_at && Date.parse(s.started_at) >= morningWakeMs)
+    .reduce((latest, s) => Math.max(latest, Date.parse(s.ended_at!)), morningWakeMs);
+
+  return [...ended, Math.max(0, (napInProgressStartMs - lastWakeMs) / HOUR_MS)];
+}
 
 /** A malformed plan shouldn't project for ever. A real day needs a fraction of these. */
 const MAX_SEGMENTS = 24;

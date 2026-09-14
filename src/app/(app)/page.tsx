@@ -18,7 +18,7 @@ import {
   sessionDurationMinutes,
 } from "@/lib/time";
 import { completedAwakeHours, completedNapHours } from "@/lib/dayBudget";
-import { forecastRestOfDay } from "@/lib/dayForecast";
+import { awakeHoursSpent, forecastRestOfDay } from "@/lib/dayForecast";
 import { feedTypeIcon, type FeedType } from "@/lib/feedingTypes";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAutoRefresh } from "@/lib/useAutoRefresh";
@@ -248,14 +248,21 @@ export default function HomePage() {
   // still to come, through to bedtime. Night sleep is left out — there's nothing after it
   // to predict until the morning. The status card reads the first of these, so the time it
   // counts down to and the band on the timeline are always the same prediction.
+  const napInProgress = openSession && !openSession.is_night_sleep ? openSession : null;
   const forecast =
-    statusTime && !openSession?.is_night_sleep
+    statusTime && morningWake && !openSession?.is_night_sleep
       ? forecastRestOfDay({
           anchorMs: parseISO(statusTime).getTime(),
-          asleep: openSession != null,
+          asleep: napInProgress != null,
           wakeWindowPlan: wakeWindows.map((w) => w.hours),
           napPlan: napDurations.map((n) => n.hours),
-          awakeSoFar: awakeSoFarHours,
+          // Counts the window that ended when this nap began, which the day's own tallies
+          // leave open until he's up again. Without it the day gains a window, and a nap.
+          awakeSoFar: awakeHoursSpent(
+            morningWake.getTime(),
+            daySessions,
+            napInProgress ? parseISO(napInProgress.started_at).getTime() : null,
+          ),
           napsSoFar: napsSoFarHours,
         })
       : [];
