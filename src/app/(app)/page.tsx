@@ -461,16 +461,6 @@ export default function HomePage() {
               <p className="text-xs text-neutral-500">{t.home.statDaytimeAwake}</p>
             </div>
             <button
-              onClick={() => setShowNapsBreakdown(true)}
-              className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
-            >
-              <Bed className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
-              <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
-                {formatDuration(napMinutes)}
-              </p>
-              <p className="text-xs text-neutral-500">{t.home.statNapsTotal}</p>
-            </button>
-            <button
               onClick={() => setShowFeedingsBreakdown(true)}
               className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
             >
@@ -489,6 +479,16 @@ export default function HomePage() {
                 {todayNightWakeUps.length}
               </p>
               <p className="text-xs text-neutral-500">{t.home.statNightWakeUps}</p>
+            </button>
+            <button
+              onClick={() => setShowNapsBreakdown(true)}
+              className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
+            >
+              <Bed className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
+              <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                {formatDuration(napMinutes)}
+              </p>
+              <p className="text-xs text-neutral-500">{t.home.statNapsTotal}</p>
             </button>
             <button
               onClick={() => setShowPoopsBreakdown(true)}
