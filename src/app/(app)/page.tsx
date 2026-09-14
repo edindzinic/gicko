@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { addDays, addHours, differenceInMinutes, endOfDay, format, isToday, parseISO, startOfDay, subDays } from "date-fns";
+import { addDays, differenceInMinutes, endOfDay, format, isToday, parseISO, startOfDay, subDays } from "date-fns";
 import { Bed, ChevronLeft, ChevronRight, Milk, Moon, PencilLine, Sun, Timer, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/database.types";
@@ -14,15 +14,11 @@ import {
   computeDayStats,
   formatDuration,
   formatTime,
-  minutesSinceMidnight,
   nightAttributionDay,
   sessionDurationMinutes,
 } from "@/lib/time";
-import {
-  adjustedFromPlan,
-  completedAwakeHours,
-  completedNapHours,
-} from "@/lib/dayBudget";
+import { completedAwakeHours, completedNapHours } from "@/lib/dayBudget";
+import { forecastRestOfDay } from "@/lib/dayForecast";
 import { feedTypeIcon, type FeedType } from "@/lib/feedingTypes";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useAutoRefresh } from "@/lib/useAutoRefresh";
@@ -246,47 +242,46 @@ export default function HomePage() {
     : [];
   const napsSoFarHours = morningWake ? completedNapHours(morningWake.getTime(), daySessions) : [];
   const completedNapsSinceWake = awakeSoFarHours.length;
-  const wakeWindowHours = adjustedFromPlan(
-    wakeWindows.map((w) => w.hours),
-    awakeSoFarHours,
-  );
   const isLastWakeWindow = wakeWindows.length > 0 && completedNapsSinceWake >= wakeWindows.length - 1;
-  const nextNapAt =
-    !openSession && statusTime && wakeWindowHours != null
-      ? addHours(parseISO(statusTime), wakeWindowHours)
-      : null;
 
-  // The nap he's on gets what's left of the day's nap time: its planned length, plus or
-  // minus whatever the naps before it over- or undershot by.
-  const napDurationHours = adjustedFromPlan(
-    napDurations.map((n) => n.hours),
-    napsSoFarHours,
-  );
-  const expectedWakeAt =
-    openSession && !openSession.is_night_sleep && statusTime && napDurationHours != null
-      ? addHours(parseISO(statusTime), napDurationHours)
-      : null;
+  // The whole rest of the day, projected: the stretch he's on, then each nap and window
+  // still to come, through to bedtime. Night sleep is left out — there's nothing after it
+  // to predict until the morning. The status card reads the first of these, so the time it
+  // counts down to and the band on the timeline are always the same prediction.
+  const forecast =
+    statusTime && !openSession?.is_night_sleep
+      ? forecastRestOfDay({
+          anchorMs: parseISO(statusTime).getTime(),
+          asleep: openSession != null,
+          wakeWindowPlan: wakeWindows.map((w) => w.hours),
+          napPlan: napDurations.map((n) => n.hours),
+          awakeSoFar: awakeSoFarHours,
+          napsSoFar: napsSoFarHours,
+        })
+      : [];
 
-  // The status card counts down to whichever comes next: the expected wake-up while he's
-  // napping, otherwise the end of the wake window he's in.
-  const predictedAt = expectedWakeAt ?? nextNapAt;
-  const predictedLabel = expectedWakeAt
-    ? t.home.expectedWakeUp
-    : isLastWakeWindow
-      ? t.home.nextBedtime
-      : t.home.nextNap;
-  const predictedTotalMinutes = expectedWakeAt
-    ? (napDurationHours ?? 0) * 60
-    : wakeWindowHours != null
-      ? wakeWindowHours * 60
-      : null;
-  const predictionBand =
-    viewingToday && predictedAt && statusTime
-      ? {
-          startMinutes: minutesSinceMidnight(statusTime),
-          endMinutes: minutesSinceMidnight(statusTime) + (predictedTotalMinutes ?? 0),
-        }
-      : undefined;
+  const currentStretch = forecast[0];
+  const predictedAt = currentStretch ? new Date(currentStretch.endMs) : null;
+  const predictedLabel =
+    currentStretch?.kind === "nap"
+      ? t.home.expectedWakeUp
+      : currentStretch?.endsAtBedtime
+        ? t.home.nextBedtime
+        : t.home.nextNap;
+  const predictedTotalMinutes = currentStretch
+    ? (currentStretch.endMs - currentStretch.startMs) / 60000
+    : null;
+
+  // The prediction is only ever about the day in progress, so an earlier day shows none.
+  const dayStartMs = startOfDay(selectedDate).getTime();
+  const predictionBands = viewingToday
+    ? forecast.map((segment) => ({
+        kind: segment.kind,
+        endsAtBedtime: segment.endsAtBedtime,
+        startMinutes: (segment.startMs - dayStartMs) / 60000,
+        endMinutes: (segment.endMs - dayStartMs) / 60000,
+      }))
+    : [];
   const elapsedMinutes = statusTime
     ? Math.max(0, differenceInMinutes(now, parseISO(statusTime)))
     : 0;
@@ -521,7 +516,7 @@ export default function HomePage() {
             onCreateSleep={(start, end) => setCreatingSleep({ start, end })}
             onCreateFeeding={(at) => setCreatingFeeding({ at })}
             allowDragCreate={false}
-            predictionBand={predictionBand}
+            predictionBands={predictionBands}
             nightWakings={nightWakings}
             onSelectWaking={setEditingWaking}
             onCreateWaking={(at) => setCreatingWaking({ start: at, end: null, sleepSessionId: null })}

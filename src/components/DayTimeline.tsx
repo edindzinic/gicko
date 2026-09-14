@@ -42,6 +42,14 @@ function minuteLabel(totalMinutes: number) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
+export type PredictionBand = {
+  kind: "awake" | "nap";
+  startMinutes: number;
+  endMinutes: number;
+  /** True on the stretch whose end is bedtime, which gets a marker of its own. */
+  endsAtBedtime: boolean;
+};
+
 type DragState = {
   pointerId: number;
   rectTop: number;
@@ -60,7 +68,7 @@ export function DayTimeline({
   onCreateFeeding,
   isToday = false,
   allowDragCreate = true,
-  predictionBand,
+  predictionBands = [],
   nightWakings = [],
   onSelectWaking,
   onCreateWaking,
@@ -81,10 +89,10 @@ export function DayTimeline({
   /** Set false to disable dragging to create a sleep session with a range (tap-to-choose still works). */
   allowDragCreate?: boolean;
   /**
-   * The window in progress, shown as a subtle band: wake-up to the predicted next nap
-   * while he's awake, or nap start to the expected wake-up while he's napping.
+   * The rest of the day as predicted, in order: the stretch in progress first, then every
+   * nap and wake window still to come. The last one ends at bedtime.
    */
-  predictionBand?: { startMinutes: number; endMinutes: number };
+  predictionBands?: PredictionBand[];
   /**
    * Set when the panel sits beside other content on a wide screen, where it can use the
    * full window height instead of the phone-sized cap.
@@ -152,6 +160,17 @@ export function DayTimeline({
 
   const isEmpty = segments.length === 0 && feedings.length === 0;
 
+  // A prediction can run past midnight; this column only has today to give it.
+  const visibleBands = predictionBands
+    .map((band) => ({
+      ...band,
+      start: Math.max(0, band.startMinutes),
+      end: Math.min(1440, band.endMinutes),
+    }))
+    .filter((band) => band.end > band.start);
+  const bedtime = predictionBands.find((band) => band.endsAtBedtime)?.endMinutes;
+  const bedtimeMinutes = bedtime != null && bedtime <= 1440 ? bedtime : null;
+
   const feedingColumnBottoms: number[] = [];
   const feedingLayout = [...feedings]
     .sort((a, b) => minutesSinceMidnight(a.occurred_at) - minutesSinceMidnight(b.occurred_at))
@@ -201,14 +220,47 @@ export function DayTimeline({
             />
           ))}
 
-          {predictionBand && (
+          {/* Drawn under everything real: a prediction should never hide what actually
+              happened, and a nap logged over a predicted one covers it exactly. */}
+          {visibleBands.map((band, i) => {
+            const top = topForMinutes(band.start);
+            const height = topForMinutes(band.end - band.start);
+            if (band.kind === "awake") {
+              // Tint only: the naps either side of it draw the boundaries, and a second
+              // dashed line right against theirs only made the day look busy.
+              return (
+                <div
+                  key={i}
+                  className="pointer-events-none absolute inset-x-0 bg-accent/5"
+                  style={{ top, height }}
+                />
+              );
+            }
+            return (
+              <div
+                key={i}
+                className="pointer-events-none absolute inset-x-2 overflow-hidden rounded-lg border border-dashed border-slate-400/70 bg-slate-400/10"
+                style={{ top, height }}
+              >
+                {height > 16 && (
+                  <span className="block px-1.5 py-0.5 text-[10px] leading-tight font-medium text-slate-500 dark:text-slate-400">
+                    🌙 {minuteLabel(Math.round(band.start))}–{minuteLabel(Math.round(band.end))}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+
+          {bedtimeMinutes != null && (
             <div
-              className="pointer-events-none absolute inset-x-0 border-y border-dashed border-accent/20 bg-accent/5"
-              style={{
-                top: topForMinutes(predictionBand.startMinutes),
-                height: topForMinutes(predictionBand.endMinutes - predictionBand.startMinutes),
-              }}
-            />
+              className="pointer-events-none absolute inset-x-0 flex items-center gap-1.5 pr-2"
+              style={{ top: topForMinutes(bedtimeMinutes) }}
+            >
+              <div className="flex-1 border-t border-dashed border-slate-400/70" />
+              <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                🌆 {minuteLabel(Math.round(bedtimeMinutes))}
+              </span>
+            </div>
           )}
 
           {isToday && (
