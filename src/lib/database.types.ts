@@ -225,6 +225,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activity_seen_at: string
           created_at: string
           display_name: string
           id: string
@@ -234,6 +235,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          activity_seen_at?: string
           created_at?: string
           display_name: string
           id: string
@@ -243,6 +245,7 @@ export type Database = {
           username: string
         }
         Update: {
+          activity_seen_at?: string
           created_at?: string
           display_name?: string
           id?: string

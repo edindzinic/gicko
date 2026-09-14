@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Calendar, ChartLine, Home, Settings } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { ActivityBell } from "@/components/ActivityBell";
 
 export function Nav() {
   const pathname = usePathname();
@@ -25,6 +26,10 @@ export function Nav() {
         <span className="text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
           Gicko
         </span>
+        {/* Absolute so the wordmark stays centred whether or not there's a badge. */}
+        <div className="absolute right-2 bottom-1.5">
+          <ActivityBell />
+        </div>
       </div>
 
       {/* Desktop sidebar */}
@@ -34,6 +39,9 @@ export function Nav() {
           <span className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
             Gicko
           </span>
+          <div className="ml-auto">
+            <ActivityBell />
+          </div>
         </div>
         <nav className="flex flex-1 flex-col gap-1">
           {links.map(({ href, label, Icon }) => (

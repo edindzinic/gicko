@@ -38,16 +38,19 @@ single shared row in `feeding_settings`, edited in Settings and seeded at 1.5 ho
 
 ### Deploying
 
-The source of truth is `functions/notify-sleep/`: `index.ts` for the runtime and
-`schedule.ts` for the timing rules. There is no Supabase CLI in this repo, so both files
-are deployed with the Supabase MCP `deploy_edge_function` tool — edit them, then redeploy
-so the running function matches the repo.
+`functions/notify-sleep/index.ts` is the runtime, and the source of truth for it. There is
+no Supabase CLI in this repo, so it is deployed with the Supabase MCP `deploy_edge_function`
+tool — edit it, then redeploy so the running function matches the repo.
 
-`schedule.ts` and `dayBudget.ts` have no dependencies and are covered by
-`schedule.test.mts` and `src/lib/dayBudget.test.mts`; run both with `npm test`.
-`dayBudget.ts` is a copy of `src/lib/dayBudget.ts` — edit the original, copy it over, and
-redeploy, or the app and the reminders will drift apart. These reminders fire when nobody is watching, so the timing rules are pinned
-down there rather than checked by hand.
+`schedule.ts` (the timing rules) and `dayBudget.ts` (the day's budget) are not: both are
+copies of `src/lib/`, bundled here so the deployed function carries them. Edit the
+original, copy it over, redeploy. `src/lib/sharedWithEdgeFunction.test.mts` fails if a
+copy drifts from its original, since the symptom otherwise is the app and the lock screen
+quietly disagreeing about when the next nap is, at night, with nobody watching. Only the
+header comment, which says which copy is which, may differ.
+
+Both originals are dependency-free and covered by `src/lib/schedule.test.mts` and
+`src/lib/dayBudget.test.mts`; `npm test` runs everything under `src/lib`.
 
 ### Keys
 
@@ -82,6 +85,26 @@ SQL side, where there is no `auth.uid()`. Both functions have `EXECUTE` revoked 
 
 The export button is admin-only in the UI, but that one is a courtesy rather than a wall:
 it reads sleep and feeding rows that everyone signed in can read anyway.
+
+## Being told
+
+Two routes, from one set of rules in `schedule.ts`.
+
+Push is the one that reaches a pocket, and the one nobody can be relied on to have: it
+needs turning on per device, and on an iPhone the app has to be installed to the home
+screen first. So `ReminderBanner` shows the same four reminders inside the app, over every
+screen, with no permission to grant and nothing to install. A push is sent once at the
+moment it comes due; the banner instead stays up for as long as that reminder is worth
+acting on — the ten minutes before a nap, the twenty before bedtime — since a banner is
+only any use if somebody is looking. `src/lib/reminders.ts` is that window, and the copy
+in `translations.ts` is word for word what the push says, so seeing both is never
+confusing. A dismissal is per device, in localStorage.
+
+`ActivityBell` is the other half: what everyone *else* has logged in the last day. There
+are no event rows behind it — the sleep, feeding, poop and waking rows already carry who
+wrote them and when, so it reads those and drops the ones you wrote yourself. How far each
+person has read is `profiles.activity_seen_at`, on the profile rather than in the browser,
+so the count agrees with itself across their phone and their laptop.
 
 ## Staying current
 

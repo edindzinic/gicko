@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test src/lib/*.test.mts supabase/functions/notify-sleep/*.test.mts"
+    "test": "node --test src/lib/*.test.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

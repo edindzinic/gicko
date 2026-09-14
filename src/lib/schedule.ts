@@ -1,10 +1,12 @@
 /**
  * When each reminder is due. Pure date arithmetic, no dependencies — the runtime bits
- * live in index.ts. The budget it leans on is shared the same way; see dayBudget.ts.
+ * live in the notify-sleep function's index.ts, and schedule.test.mts exercises this
+ * file directly with `npm test`. The budget it leans on is shared the same way; see
+ * dayBudget.ts.
  *
- * A copy of src/lib/schedule.ts, which is the original and where the tests live. The app
- * reads these same rules to show a reminder in its own window, so edit that one, copy it
- * here and redeploy, or the banner and the push will drift apart.
+ * This is the original, and a byte-identical copy is deployed with that function. One
+ * set of rules is what lets the banner in the app and the push on the lock screen
+ * announce the same thing at the same moment. Edit here, copy it over, redeploy.
  */
 import { adjustedFromPlan, completedAwakeHours, completedNapHours } from "./dayBudget.ts";
 
