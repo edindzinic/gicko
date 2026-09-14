@@ -270,7 +270,7 @@ export function WeekView({
                     onClick={() => onSelectWaking?.(waking)}
                     disabled={!onSelectWaking}
                     title={`${t.timelineView.nightWaking} · ${formatDuration(duration)}`}
-                    className="absolute inset-x-0.5 z-[5] rounded bg-amber-300 ring-1 ring-amber-500/40"
+                    className="absolute inset-x-0.5 z-[5] rounded bg-violet-300 ring-1 ring-violet-500/40"
                     style={{ top: pct(startMinutes), height: Math.max(pct(duration), 3) }}
                   />
                 );
@@ -353,7 +353,7 @@ export function WeekView({
                           );
                           setTapPrompt(null);
                         }}
-                        className="mt-1 block w-full rounded-lg bg-amber-300 px-1.5 py-1 text-left text-[10px] font-medium whitespace-nowrap text-amber-950"
+                        className="mt-1 block w-full rounded-lg bg-violet-300 px-1.5 py-1 text-left text-[10px] font-medium whitespace-nowrap text-violet-950"
                       >
                         {t.actions.logNightWaking}
                       </button>
@@ -374,7 +374,7 @@ export function WeekView({
           <span className="h-3 w-3 rounded bg-slate-400" /> {t.timelineView.nap}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded bg-amber-300" /> {t.timelineView.nightWaking}
+          <span className="h-3 w-3 rounded bg-violet-300" /> {t.timelineView.nightWaking}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-full bg-accent" /> {t.timelineView.feeding}

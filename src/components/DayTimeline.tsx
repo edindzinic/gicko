@@ -299,7 +299,7 @@ export function DayTimeline({
                 onClick={() => onSelectWaking?.(waking)}
                 disabled={!onSelectWaking}
                 title={`${t.timelineView.nightWaking} · ${formatDuration(endMinutes - startMinutes)}`}
-                className="absolute inset-x-2 z-[5] overflow-hidden rounded-md bg-amber-300 px-2 text-left text-[10px] font-medium whitespace-nowrap text-amber-950 ring-1 ring-amber-500/40"
+                className="absolute inset-x-2 z-[5] overflow-hidden rounded-md bg-violet-300 px-2 text-left text-[10px] font-medium whitespace-nowrap text-violet-950 ring-1 ring-violet-500/40"
                 style={{ top, height }}
               >
                 {height > 12 && label}
@@ -394,7 +394,7 @@ export function DayTimeline({
                       onCreateWaking(minutesToDate(tapPrompt));
                       setTapPrompt(null);
                     }}
-                    className="mt-2 w-full rounded-lg bg-amber-300 px-2 py-1.5 text-left text-xs font-medium whitespace-nowrap text-amber-950"
+                    className="mt-2 w-full rounded-lg bg-violet-300 px-2 py-1.5 text-left text-xs font-medium whitespace-nowrap text-violet-950"
                   >
                     {t.actions.logNightWaking}
                   </button>
