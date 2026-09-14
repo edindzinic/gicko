@@ -202,6 +202,27 @@ export type Database = {
         }
         Relationships: []
       }
+      poops: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          day: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          day: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          day?: string
+          id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

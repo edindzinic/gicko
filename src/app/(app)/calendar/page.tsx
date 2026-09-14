@@ -42,6 +42,15 @@ type DayStats = {
   feedingCount: number;
   solidCount: number;
   nightWakeUps: number;
+  poops: number;
+};
+
+const EMPTY_DAY_STATS: DayStats = {
+  sleepMinutes: 0,
+  feedingCount: 0,
+  solidCount: 0,
+  nightWakeUps: 0,
+  poops: 0,
 };
 
 export default function CalendarPage() {
@@ -55,6 +64,7 @@ export default function CalendarPage() {
   const [sessions, setSessions] = useState<Tables<"sleep_sessions">[]>([]);
   const [feedings, setFeedings] = useState<Tables<"feedings">[]>([]);
   const [nightWakings, setNightWakings] = useState<Tables<"night_wakings">[]>([]);
+  const [poops, setPoops] = useState<Tables<"poops">[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [editingSession, setEditingSession] = useState<Tables<"sleep_sessions"> | null>(null);
   const [editingFeeding, setEditingFeeding] = useState<Tables<"feedings"> | null>(null);
@@ -96,7 +106,7 @@ export default function CalendarPage() {
     const start = gridStart.toISOString();
     const end = gridEnd.toISOString();
 
-    const [{ data: s }, { data: f }, { data: wakings }] = await Promise.all([
+    const [{ data: s }, { data: f }, { data: wakings }, { data: poopRows }] = await Promise.all([
       // Both reach back a day: an evening event counts toward the next morning's day.
       supabase
         .from("sleep_sessions")
@@ -113,11 +123,18 @@ export default function CalendarPage() {
         .select("*")
         .gte("started_at", addDays(gridStart, -1).toISOString())
         .lte("started_at", end),
+      // Poops are already filed under a day, so the grid's own dates are the whole range.
+      supabase
+        .from("poops")
+        .select("*")
+        .gte("day", format(gridStart, "yyyy-MM-dd"))
+        .lte("day", format(gridEnd, "yyyy-MM-dd")),
     ]);
 
     setSessions(s ?? []);
     setFeedings(f ?? []);
     setNightWakings(wakings ?? []);
+    setPoops(poopRows ?? []);
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [month]);
@@ -140,15 +157,13 @@ export default function CalendarPage() {
       const key = s.is_night_sleep
         ? nightAttributionDay(s.started_at)
         : format(new Date(s.started_at), "yyyy-MM-dd");
-      const stat =
-        map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, solidCount: 0, nightWakeUps: 0 };
+      const stat = map.get(key) ?? { ...EMPTY_DAY_STATS };
       stat.sleepMinutes += sleepMinutesExcludingWakings(s, nightWakings);
       map.set(key, stat);
     }
     for (const f of feedings) {
       const key = format(new Date(f.occurred_at), "yyyy-MM-dd");
-      const stat =
-        map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, solidCount: 0, nightWakeUps: 0 };
+      const stat = map.get(key) ?? { ...EMPTY_DAY_STATS };
       if (f.feed_type === "solid") {
         stat.solidCount += 1;
       } else {
@@ -158,13 +173,17 @@ export default function CalendarPage() {
     }
     for (const wakeUp of collectNightWakeUps(nightWakings)) {
       const key = nightAttributionDay(wakeUp.wokeAt);
-      const stat =
-        map.get(key) ?? { sleepMinutes: 0, feedingCount: 0, solidCount: 0, nightWakeUps: 0 };
+      const stat = map.get(key) ?? { ...EMPTY_DAY_STATS };
       stat.nightWakeUps += 1;
       map.set(key, stat);
     }
+    for (const poop of poops) {
+      const stat = map.get(poop.day) ?? { ...EMPTY_DAY_STATS };
+      stat.poops += 1;
+      map.set(poop.day, stat);
+    }
     return map;
-  }, [sessions, feedings, nightWakings]);
+  }, [sessions, feedings, nightWakings, poops]);
 
   function refreshAfterEdit() {
     setEditingSession(null);
@@ -271,7 +290,14 @@ export default function CalendarPage() {
                       : "border-transparent bg-neutral-50 text-neutral-300 dark:bg-black"
                   } ${isToday(day) ? "ring-2 ring-accent" : ""}`}
                 >
-                  <span className="text-xs font-medium">{format(day, "d")}</span>
+                  <span className="flex w-full items-center justify-between gap-1">
+                    <span className="text-xs font-medium">{format(day, "d")}</span>
+                    {stat && stat.poops > 0 && (
+                      <span className="text-[10px] leading-tight text-neutral-500 sm:text-xs">
+                        💩 {stat.poops}
+                      </span>
+                    )}
+                  </span>
                   {stat && (
                     <div className="mt-auto space-y-0.5 text-[10px] leading-tight text-neutral-500 sm:text-xs">
                       {stat.sleepMinutes > 0 && <p>😴 {formatDuration(stat.sleepMinutes)}</p>}

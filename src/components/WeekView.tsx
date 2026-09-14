@@ -24,6 +24,7 @@ const FEEDING_COLUMN_WIDTH_PX = 18;
 type SleepSession = Tables<"sleep_sessions">;
 type Feeding = Tables<"feedings">;
 type NightWaking = Tables<"night_wakings">;
+type Poop = Tables<"poops">;
 
 function pct(minutes: number) {
   return (minutes / 1440) * DAY_HEIGHT;
@@ -74,6 +75,7 @@ export function WeekView({
   const [sessions, setSessions] = useState<SleepSession[]>([]);
   const [feedings, setFeedings] = useState<Feeding[]>([]);
   const [nightWakings, setNightWakings] = useState<NightWaking[]>([]);
+  const [poops, setPoops] = useState<Poop[]>([]);
   const [loading, setLoading] = useState(true);
   const [tapPrompt, setTapPrompt] = useState<{ day: string; minutes: number } | null>(null);
 
@@ -87,7 +89,7 @@ export function WeekView({
     const rangeStart = addDays(startDate, -1).toISOString();
     const rangeEnd = addDays(startDate, visibleDays + 1).toISOString();
 
-    const [{ data: s }, { data: f }, { data: w }] = await Promise.all([
+    const [{ data: s }, { data: f }, { data: w }, { data: p }] = await Promise.all([
       supabase
         .from("sleep_sessions")
         .select("*")
@@ -104,11 +106,18 @@ export function WeekView({
         .select("*")
         .lte("started_at", rangeEnd)
         .or(`ended_at.gte.${rangeStart},ended_at.is.null`),
+      // A poop is filed under a day, so only the columns on screen are worth fetching.
+      supabase
+        .from("poops")
+        .select("*")
+        .gte("day", format(startDate, "yyyy-MM-dd"))
+        .lte("day", format(addDays(startDate, visibleDays - 1), "yyyy-MM-dd")),
     ]);
 
     setSessions(s ?? []);
     setFeedings(f ?? []);
     setNightWakings(w ?? []);
+    setPoops(p ?? []);
     setLoading(false);
   }, [startDate, visibleDays]);
 
@@ -125,6 +134,11 @@ export function WeekView({
   }
 
   const visibleDayKeys = new Set(days.map((d) => format(d, "yyyy-MM-dd")));
+
+  const poopsByDay = new Map<string, number>();
+  for (const poop of poops) {
+    poopsByDay.set(poop.day, (poopsByDay.get(poop.day) ?? 0) + 1);
+  }
 
   const segmentsByDay = new Map<
     string,
@@ -165,18 +179,25 @@ export function WeekView({
     <div className={`isolate ${loading ? "opacity-50" : ""}`}>
       <div className="flex">
         <div className="w-14 shrink-0" />
-        {days.map((day) => (
-          <button
-            key={day.toISOString()}
-            onClick={() => onSelectDay(format(day, "yyyy-MM-dd"))}
-            className={`flex-1 rounded-xl py-2 text-center text-xs font-medium hover:bg-neutral-100 dark:hover:bg-neutral-900 ${
-              isToday(day) ? "text-accent" : "text-neutral-400"
-            }`}
-          >
-            <div>{format(day, "EEE")}</div>
-            <div className="text-base">{format(day, "d")}</div>
-          </button>
-        ))}
+        {days.map((day) => {
+          const poopCount = poopsByDay.get(format(day, "yyyy-MM-dd")) ?? 0;
+          return (
+            <button
+              key={day.toISOString()}
+              onClick={() => onSelectDay(format(day, "yyyy-MM-dd"))}
+              className={`flex-1 rounded-xl py-2 text-center text-xs font-medium hover:bg-neutral-100 dark:hover:bg-neutral-900 ${
+                isToday(day) ? "text-accent" : "text-neutral-400"
+              }`}
+            >
+              <div>{format(day, "EEE")}</div>
+              <div className="text-base">{format(day, "d")}</div>
+              {/* Kept to a fixed height so the columns stay aligned on a day with none. */}
+              <div className="h-4 text-[10px] leading-4 text-neutral-500">
+                {poopCount > 0 ? `💩 ${poopCount}` : ""}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex">

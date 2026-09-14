@@ -63,6 +63,8 @@ export default function HomePage() {
   const [showFeedingsBreakdown, setShowFeedingsBreakdown] = useState(false);
   const [showWakeUpsBreakdown, setShowWakeUpsBreakdown] = useState(false);
   const [showNapsBreakdown, setShowNapsBreakdown] = useState(false);
+  const [poops, setPoops] = useState<Tables<"poops">[]>([]);
+  const [showPoopsBreakdown, setShowPoopsBreakdown] = useState(false);
 
   const viewingToday = isToday(selectedDate);
   const dayKey = format(selectedDate, "yyyy-MM-dd");
@@ -114,6 +116,7 @@ export default function HomePage() {
       { data: feedings },
       { data: nights },
       { data: wakings },
+      { data: poopRows },
     ] = await Promise.all([
         supabase
           .from("sleep_sessions")
@@ -142,6 +145,12 @@ export default function HomePage() {
           .gte("started_at", wakingsFrom)
           .lte("started_at", dayEnd)
           .order("started_at", { ascending: false }),
+        // Poops carry a day rather than a time, so this one needs no window around midnight.
+        supabase
+          .from("poops")
+          .select("*")
+          .eq("day", format(selectedDate, "yyyy-MM-dd"))
+          .order("created_at", { ascending: true }),
       ]);
 
     setOpenSession(open ?? null);
@@ -149,6 +158,7 @@ export default function HomePage() {
     setDayFeedings(feedings ?? []);
     setNightSessions(nights ?? []);
     setNightWakings(wakings ?? []);
+    setPoops(poopRows ?? []);
     setLoading(false);
   }, [selectedDate]);
 
@@ -174,6 +184,21 @@ export default function HomePage() {
       .from("sleep_sessions")
       .update({ ended_at: new Date().toISOString() })
       .eq("id", openSession.id);
+    load();
+  }
+
+  async function logPoop() {
+    const supabase = createClient();
+    await supabase.from("poops").insert({ day: dayKey });
+    load();
+  }
+
+  /** Undoes a mis-tap: the day holds a count, so it's the newest one that goes. */
+  async function removeLastPoop() {
+    const last = poops[poops.length - 1];
+    if (!last) return;
+    const supabase = createClient();
+    await supabase.from("poops").delete().eq("id", last.id);
     load();
   }
 
@@ -403,18 +428,28 @@ export default function HomePage() {
             </div>
           )}
 
-          {viewingToday && (
+          {/* A feeding is logged at the moment it happens, so that button is today's only.
+              A poop is only ever a tally against a day, so it works on whichever day is open. */}
+          <div className="mb-3 flex gap-3">
+            {viewingToday && (
+              <button
+                onClick={() => setFeedingModalSleepId(null)}
+                className="flex-1 rounded-xl border-2 border-accent py-4 text-lg font-semibold text-accent active:scale-[0.98]"
+              >
+                {t.home.logAFeeding}
+              </button>
+            )}
             <button
-              onClick={() => setFeedingModalSleepId(null)}
-              className="mb-3 w-full rounded-xl border-2 border-accent py-4 text-lg font-semibold text-accent active:scale-[0.98]"
+              onClick={logPoop}
+              className="flex-1 rounded-xl border-2 border-amber-700/60 py-4 text-lg font-semibold text-amber-800 active:scale-[0.98] dark:border-amber-600/60 dark:text-amber-500"
             >
-              {t.home.logAFeeding}
+              {t.home.logAPoop}
             </button>
-          )}
+          </div>
 
           {/* Day rollup */}
-          {/* Three cards then two. A single row of five leaves each card too narrow for
-              the values it has to hold — a night's sleep, or a day's millilitres. */}
+          {/* Two rows of three. A single row leaves each card too narrow for the values it
+              has to hold — a night's sleep, or a day's millilitres. */}
           <div className="mb-6 grid grid-cols-6 gap-3 text-center">
             <div className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
               <Moon className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
@@ -442,7 +477,7 @@ export default function HomePage() {
             </button>
             <button
               onClick={() => setShowFeedingsBreakdown(true)}
-              className="col-span-3 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
+              className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
             >
               <Milk className="mx-auto mb-1 h-4 w-4 text-accent" strokeWidth={1.75} />
               <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
@@ -452,13 +487,23 @@ export default function HomePage() {
             </button>
             <button
               onClick={() => setShowWakeUpsBreakdown(true)}
-              className="col-span-3 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
+              className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
             >
               <Timer className="mx-auto mb-1 h-4 w-4 text-neutral-400" strokeWidth={1.75} />
               <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
                 {todayNightWakeUps.length}
               </p>
               <p className="text-xs text-neutral-500">{t.home.statNightWakeUps}</p>
+            </button>
+            <button
+              onClick={() => setShowPoopsBreakdown(true)}
+              className="col-span-2 rounded-2xl border border-neutral-200 bg-white p-4 text-center transition hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
+            >
+              <span className="mb-1 block h-4 text-sm leading-4">💩</span>
+              <p className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                {poops.length}
+              </p>
+              <p className="text-xs text-neutral-500">{t.home.statPoops}</p>
             </button>
           </div>
         </div>
@@ -735,6 +780,56 @@ export default function HomePage() {
                 ))}
               </ul>
             )}
+          </div>
+        </div>
+      )}
+
+      {showPoopsBreakdown && (
+        <div
+          className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center"
+          onClick={() => setShowPoopsBreakdown(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl dark:bg-neutral-950"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                {t.home.poopsToday}
+              </h2>
+              <button
+                onClick={() => setShowPoopsBreakdown(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-900"
+              >
+                <X className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* Nothing is recorded about a poop but the day it fell on, so there's no list
+                to show — just the tally, and the two ways to correct it. */}
+            {poops.length === 0 ? (
+              <p className="py-6 text-center text-sm text-neutral-400">{t.home.noPoopsToday}</p>
+            ) : (
+              <p className="py-6 text-center text-5xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">
+                💩 {poops.length}
+              </p>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={removeLastPoop}
+                disabled={poops.length === 0}
+                className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600 disabled:opacity-40 dark:border-neutral-800 dark:text-neutral-300"
+              >
+                − {t.home.removePoop}
+              </button>
+              <button
+                onClick={logPoop}
+                className="flex-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
+              >
+                + {t.home.addPoop}
+              </button>
+            </div>
           </div>
         </div>
       )}
