@@ -3,7 +3,7 @@
  *
  * Four kinds: a heads-up ten minutes before the next nap, twenty before bedtime, a
  * nudge five minutes before a nap should end so he can be woken, and a feeding reminder
- * an hour and a half after the last one. pg_cron calls this once a minute (see the
+ * the configured interval after the last one. pg_cron calls this once a minute (see the
  * schedule_notify_sleep_tick migration); the app calls it with { test: true } to prove a
  * device is set up.
  *
@@ -23,6 +23,7 @@ import {
   type Kind,
   type Session,
 } from "./schedule.ts";
+import { formatDuration } from "./duration.ts";
 
 /** How late a tick may be and still send. Past that the moment has gone; stay quiet. */
 const FIRE_WINDOW_MS = 2 * 60 * 1000;
@@ -31,7 +32,15 @@ const RECENT_SESSION_HOURS = 48;
 type Language = "en" | "bs" | "de";
 type Subscriber = { endpoint: string; p256dh: string; auth: string; language: Language };
 
-const COPY: Record<Kind, Record<Language, { title: string; body: string }>> = {
+/**
+ * A body is usually a fixed sentence. The feeding one is a function because it names the
+ * configured interval, which is a setting and does change — it read "an hour and a half"
+ * for weeks after that stopped being true. `src/lib/i18n/translations.ts` carries the
+ * same four in the same words for the in-app banner.
+ */
+type Copy = { title: string; body: string | ((feedingGap: string) => string) };
+
+const COPY: Record<Kind, Record<Language, Copy>> = {
   nap_due: {
     en: { title: "Nap in 10 minutes", body: "The wake window is nearly up." },
     bs: { title: "Dremka za 10 minuta", body: "Prozor budnosti je skoro pri kraju." },
@@ -48,9 +57,9 @@ const COPY: Record<Kind, Record<Language, { title: string; body: string }>> = {
     de: { title: "Weck ihn in 5 Minuten", body: "Das Nickerchen hat fast seine geplante Länge." },
   },
   feeding_due: {
-    en: { title: "Time for a feeding", body: "An hour and a half since the last one." },
-    bs: { title: "Vrijeme za hranjenje", body: "Sat i po od zadnjeg hranjenja." },
-    de: { title: "Zeit für eine Mahlzeit", body: "Eineinhalb Stunden seit der letzten." },
+    en: { title: "Time for a feeding", body: (gap: string) => `${gap} since the last one.` },
+    bs: { title: "Vrijeme za hranjenje", body: (gap: string) => `${gap} od zadnjeg hranjenja.` },
+    de: { title: "Zeit für eine Mahlzeit", body: (gap: string) => `${gap} seit der letzten.` },
   },
   test: {
     en: { title: "Notifications are on", body: "This is what a Gicko reminder looks like." },
@@ -112,7 +121,14 @@ async function loadSubscribers(supabase: SupabaseClient, userId?: string) {
   })) satisfies Subscriber[];
 }
 
-async function send(supabase: SupabaseClient, subscribers: Subscriber[], kind: Kind, ttlSeconds: number) {
+async function send(
+  supabase: SupabaseClient,
+  subscribers: Subscriber[],
+  kind: Kind,
+  ttlSeconds: number,
+  /** Fills the feeding reminder's gap. Every other kind's copy is fixed and ignores it. */
+  feedingGap = "",
+) {
   let sent = 0;
   let dropped = 0;
   const failures: string[] = [];
@@ -120,10 +136,11 @@ async function send(supabase: SupabaseClient, subscribers: Subscriber[], kind: K
   await Promise.all(
     subscribers.map(async (sub) => {
       const copy = COPY[kind][sub.language] ?? COPY[kind].en;
+      const body = typeof copy.body === "function" ? copy.body(feedingGap) : copy.body;
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          JSON.stringify({ title: copy.title, body: copy.body, tag: kind, url: "/" }),
+          JSON.stringify({ title: copy.title, body, tag: kind, url: "/" }),
           // A reminder that arrives after the moment it was about is worse than none, so
           // it expires with the lead time it was sent for.
           { TTL: ttlSeconds, urgency: "high" },
@@ -191,11 +208,13 @@ Deno.serve(async (req) => {
     supabase.from("feeding_settings").select("interval_hours").maybeSingle(),
   ]);
 
+  const feedingIntervalHours =
+    Number(feedingSettings.data?.interval_hours) || DEFAULT_FEEDING_INTERVAL_HOURS;
+
   const due = computeDue(now, (sessions.data ?? []) as Session[], (feedings.data ?? []) as Feeding[], {
     wakeWindowHours: (wakeWindows.data ?? []).map((w) => Number(w.hours)),
     napDurationHours: (napDurations.data ?? []).map((n) => Number(n.hours)),
-    feedingIntervalHours:
-      Number(feedingSettings.data?.interval_hours) || DEFAULT_FEEDING_INTERVAL_HOURS,
+    feedingIntervalHours,
   });
 
   // A moment that has already passed by more than the window stays unannounced.
@@ -236,7 +255,13 @@ Deno.serve(async (req) => {
       continue;
     }
 
-    const result = await send(supabase, subscribers, item.kind, item.ttlSeconds);
+    const result = await send(
+      supabase,
+      subscribers,
+      item.kind,
+      item.ttlSeconds,
+      formatDuration(feedingIntervalHours * 60),
+    );
     await supabase
       .from("notification_deliveries")
       .update({ sent_count: result.sent })

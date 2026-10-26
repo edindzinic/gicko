@@ -42,15 +42,21 @@ single shared row in `feeding_settings`, edited in Settings and seeded at 1.5 ho
 no Supabase CLI in this repo, so it is deployed with the Supabase MCP `deploy_edge_function`
 tool — edit it, then redeploy so the running function matches the repo.
 
-`schedule.ts` (the timing rules) and `dayBudget.ts` (the day's budget) are not: both are
-copies of `src/lib/`, bundled here so the deployed function carries them. Edit the
-original, copy it over, redeploy. `src/lib/sharedWithEdgeFunction.test.mts` fails if a
-copy drifts from its original, since the symptom otherwise is the app and the lock screen
-quietly disagreeing about when the next nap is, at night, with nobody watching. Only the
-header comment, which says which copy is which, may differ.
+`schedule.ts` (the timing rules), `dayBudget.ts` (the day's budget) and `duration.ts`
+(wording a length of time) are not: all three are copies of `src/lib/`, bundled here so
+the deployed function carries them. Edit the original, copy it over, redeploy.
+`src/lib/sharedWithEdgeFunction.test.mts` fails if a copy drifts from its original, since
+the symptom otherwise is the app and the lock screen quietly disagreeing about when the
+next nap is, at night, with nobody watching. Only the header comment, which says which
+copy is which, may differ.
 
-Both originals are dependency-free and covered by `src/lib/schedule.test.mts` and
+The originals are dependency-free and covered by `src/lib/schedule.test.mts` and
 `src/lib/dayBudget.test.mts`; `npm test` runs everything under `src/lib`.
+
+Nothing stops someone deploying a hand-edited function straight from the dashboard or the
+MCP tool, and it has happened: the copy that ran from September to October said "The
+feeding interval is up", a sentence that is in no commit. If a reminder's wording is a
+surprise, read the deployed source before trusting this file.
 
 ### Keys
 

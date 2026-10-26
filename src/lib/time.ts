@@ -8,14 +8,9 @@ export function isNightTime(iso: string) {
   return hour >= NIGHT_START_HOUR || hour < NIGHT_END_HOUR;
 }
 
-export function formatDuration(minutes: number) {
-  const total = Math.round(minutes);
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  if (h <= 0) return `${m}m`;
-  if (m <= 0) return `${h}h`;
-  return `${h}h ${m}m`;
-}
+// Lives in its own file because the notify-sleep function needs it too, and this one
+// leans on date-fns. Re-exported so nothing that formats a duration has to care.
+export { formatDuration } from "./duration.ts";
 
 export function sessionDurationMinutes(startedAt: string, endedAt: string | null) {
   const end = endedAt ? parseISO(endedAt) : new Date();

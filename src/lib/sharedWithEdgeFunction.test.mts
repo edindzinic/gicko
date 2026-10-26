@@ -14,7 +14,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const SHARED = ["dayBudget.ts", "schedule.ts"];
+const SHARED = ["dayBudget.ts", "duration.ts", "schedule.ts"];
 const EDGE_FUNCTION_DIR = "supabase/functions/notify-sleep";
 
 /** Everything after the header comment, which is the part that has to match. */
