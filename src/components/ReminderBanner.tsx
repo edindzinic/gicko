@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Bell, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { formatDuration } from "@/lib/time";
 import { computeDue, DEFAULT_FEEDING_INTERVAL_HOURS, type Due } from "@/lib/schedule.ts";
 import { currentReminder, reminderKey } from "@/lib/reminders";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -123,7 +124,13 @@ export function ReminderBanner() {
   if (!showing) return null;
 
   const copy = t.reminders[showing.kind];
-  return <ReminderCard title={copy.title} body={copy.body} onDismiss={() => dismiss(showing)} />;
+  // The feeding reminder names the gap it's counting rather than a fixed phrase, so
+  // changing the interval in Settings changes what the banner says.
+  const body =
+    typeof copy.body === "function"
+      ? copy.body(formatDuration(data.feedingIntervalHours * 60))
+      : copy.body;
+  return <ReminderCard title={copy.title} body={body} onDismiss={() => dismiss(showing)} />;
 }
 
 /** The banner itself, with no idea what a reminder is — kept separate so it can be looked at. */

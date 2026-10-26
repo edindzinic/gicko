@@ -76,12 +76,16 @@ const en = {
     week: "Week",
     weekdayLetters: ["M", "T", "W", "T", "F", "S", "S"],
   },
-  // Word for word what the push notification says, so seeing both is never confusing.
+  // What the push notification says, so seeing both is never confusing — except the
+  // feeding gap, which is read from the setting rather than written into the sentence.
   reminders: {
     nap_due: { title: "Nap in 10 minutes", body: "The wake window is nearly up." },
     bedtime_due: { title: "Time for a bath", body: "Bedtime is about twenty minutes away." },
     nap_end: { title: "Wake him in 5 minutes", body: "The nap is almost as long as it should be." },
-    feeding_due: { title: "Time for a feeding", body: "An hour and a half since the last one." },
+    feeding_due: {
+      title: "Time for a feeding",
+      body: (gap: string) => `${gap} since the last one.`,
+    },
     dismiss: "Dismiss",
   },
   activity: {
@@ -304,7 +308,10 @@ const bs: Translations = {
     nap_due: { title: "Dremka za 10 minuta", body: "Prozor budnosti je skoro pri kraju." },
     bedtime_due: { title: "Vrijeme za kupanje", body: "Spavanje je za dvadesetak minuta." },
     nap_end: { title: "Probudi ga za 5 minuta", body: "Dremka je skoro dostigla predviđenu dužinu." },
-    feeding_due: { title: "Vrijeme za hranjenje", body: "Sat i po od zadnjeg hranjenja." },
+    feeding_due: {
+      title: "Vrijeme za hranjenje",
+      body: (gap: string) => `${gap} od zadnjeg hranjenja.`,
+    },
     dismiss: "Sakrij",
   },
   activity: {
@@ -525,7 +532,10 @@ const de: Translations = {
     nap_due: { title: "Nickerchen in 10 Minuten", body: "Das Wachfenster ist fast vorbei." },
     bedtime_due: { title: "Zeit für das Bad", body: "In gut zwanzig Minuten ist Schlafenszeit." },
     nap_end: { title: "Weck ihn in 5 Minuten", body: "Das Nickerchen hat fast seine geplante Länge." },
-    feeding_due: { title: "Zeit für eine Mahlzeit", body: "Eineinhalb Stunden seit der letzten." },
+    feeding_due: {
+      title: "Zeit für eine Mahlzeit",
+      body: (gap: string) => `${gap} seit der letzten.`,
+    },
     dismiss: "Ausblenden",
   },
   activity: {
